@@ -15,13 +15,33 @@ struct s_config
 	char	*scheduler;
 };
 
+struct s_dongle
+{
+	int				is_available;
+	long			cooldown_until;
+	pthread_mutex_t	mutex;
+};
+
+struct s_task
+{
+	struct s_developer	*developer;
+	long				arrival_order;
+	long				deadline;
+};
+
 struct s_shared_resource
 {
 	struct s_config	config;
+	struct s_dongle	*dongles;
+	struct s_task		*tasks;
 	long			start_time;
+	long			next_task_order;
 	int				stopped;
+	int				task_count;
 	pthread_mutex_t	print_mutex;
 	pthread_mutex_t	state_mutex;
+	pthread_mutex_t	scheduler_mutex;
+	pthread_cond_t	scheduler_cond;
 };
 
 struct s_developer
@@ -44,5 +64,10 @@ int		init_simulation(struct s_simulation *simulation_data,
 			struct s_config *config);
 void	destroy_simulation(struct s_simulation *simulation_data);
 long	get_time(void);
+void	*developer_routine(void *argument);
+int		is_simulation_stopped(struct s_shared_resource *shared_resource);
+int		take_dongles(struct s_developer *developer);
+void	release_dongles(struct s_developer *developer);
+void	log_status(struct s_developer *developer, char *status);
 
 #endif
