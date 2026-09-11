@@ -1,19 +1,19 @@
 #include <stdio.h>
 #include "codexion.h"
 
-void	log_status(struct s_developer *developer, char *status)
+void	registrar_estado(struct s_desarrollador *desarrollador, char *estado)
 {
-	struct s_shared_resource	*shared_resource;
-	long				timestamp;
+	struct s_recurso_compartido	*recurso_compartido;
+	long					marca_tiempo;
 
-	shared_resource = developer->shared_resource;
-	pthread_mutex_lock(&shared_resource->state_mutex);
-	if (!shared_resource->stopped)
+	recurso_compartido = desarrollador->recurso_compartido;
+	pthread_mutex_lock(&recurso_compartido->mutex_estado);
+	if (!recurso_compartido->detenida)
 	{
-		pthread_mutex_lock(&shared_resource->print_mutex);
-		timestamp = get_time() - shared_resource->start_time;
-		printf("%ld %d %s\n", timestamp, developer->id, status);
-		pthread_mutex_unlock(&shared_resource->print_mutex);
+		pthread_mutex_lock(&recurso_compartido->mutex_impresion);
+		marca_tiempo = obtener_tiempo() - recurso_compartido->inicio;
+		printf("%ld %d %s\n", marca_tiempo, desarrollador->id, estado);
+		pthread_mutex_unlock(&recurso_compartido->mutex_impresion);
 	}
-	pthread_mutex_unlock(&shared_resource->state_mutex);
+	pthread_mutex_unlock(&recurso_compartido->mutex_estado);
 }

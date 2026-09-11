@@ -1,51 +1,57 @@
 #include "codexion.h"
 #include <unistd.h>
 
-int	is_simulation_stopped(struct s_shared_resource *shared_resource)
+int	simulacion_detenida(struct s_recurso_compartido *recurso_compartido)
 {
-	int	stopped;
+	int	detenida;
 
-	pthread_mutex_lock(&shared_resource->state_mutex);
-	stopped = shared_resource->stopped;
-	pthread_mutex_unlock(&shared_resource->state_mutex);
-	return (stopped);
+	pthread_mutex_lock(&recurso_compartido->mutex_estado);
+	detenida = recurso_compartido->detenida;
+	pthread_mutex_unlock(&recurso_compartido->mutex_estado);
+	return (detenida);
 }
 
-void	*developer_routine(void *argument)
+void	*rutina_desarrollador(void *argumento)
 {
-	struct s_developer	*developer;
-	int				finished;
+	struct s_desarrollador	*desarrollador;
+	int					terminado;
 
-	developer = (struct s_developer *)argument;
-	if (developer == NULL)
+	desarrollador = (struct s_desarrollador *)argumento;
+	if (desarrollador == NULL)
 		return (NULL);
-	while (!is_simulation_stopped(developer->shared_resource))
+	while (!simulacion_detenida(desarrollador->recurso_compartido))
 	{
-		if (!take_dongles(developer))
+		if (!tomar_dongles(desarrollador))
 			break ;
-		pthread_mutex_lock(&developer->shared_resource->state_mutex);
-		developer->last_compile_start = get_time();
-		pthread_mutex_unlock(&developer->shared_resource->state_mutex);
-		log_status(developer, "has taken a dongle");
-		log_status(developer, "has taken a dongle");
-		log_status(developer, "is compiling");
-		usleep(developer->shared_resource->config.time_to_compile * 1000);
-		release_dongles(developer);
-		if (is_simulation_stopped(developer->shared_resource))
+		pthread_mutex_lock(&desarrollador->recurso_compartido->mutex_estado);
+		desarrollador->inicio_ultima_compilacion = obtener_tiempo();
+		pthread_mutex_unlock(&desarrollador->recurso_compartido->mutex_estado);
+		registrar_estado(desarrollador, "ha tomado un dongle");
+		if (desarrollador->recurso_compartido->configuracion
+			.cantidad_desarrolladores > 1)
+			registrar_estado(desarrollador, "ha tomado un dongle");
+		registrar_estado(desarrollador, "está compilando");
+		usleep(desarrollador->recurso_compartido->configuracion.tiempo_compilar
+			* 1000);
+		liberar_dongles(desarrollador);
+		if (simulacion_detenida(desarrollador->recurso_compartido))
 			break ;
-		pthread_mutex_lock(&developer->shared_resource->state_mutex);
-		developer->compiles_done++;
-		finished = (developer->compiles_done
-			>= developer->shared_resource->config.number_of_compiles_required);
-		pthread_mutex_unlock(&developer->shared_resource->state_mutex);
-		if (finished)
+		pthread_mutex_lock(&desarrollador->recurso_compartido->mutex_estado);
+		desarrollador->compilaciones_hechas++;
+		terminado = (desarrollador->compilaciones_hechas
+			>= desarrollador->recurso_compartido->configuracion
+			.compilaciones_requeridas);
+		pthread_mutex_unlock(&desarrollador->recurso_compartido->mutex_estado);
+		if (terminado)
 			break ;
-		log_status(developer, "is debugging");
-		usleep(developer->shared_resource->config.time_to_debug * 1000);
-		if (is_simulation_stopped(developer->shared_resource))
+		registrar_estado(desarrollador, "está depurando");
+		usleep(desarrollador->recurso_compartido->configuracion.tiempo_depurar
+			* 1000);
+		if (simulacion_detenida(desarrollador->recurso_compartido))
 			break ;
-		log_status(developer, "is refactoring");
-		usleep(developer->shared_resource->config.time_to_refactor * 1000);
+		registrar_estado(desarrollador, "está refactorizando");
+		usleep(desarrollador->recurso_compartido->configuracion
+			.tiempo_refactorizar * 1000);
 	}
 	return (NULL);
 }

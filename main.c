@@ -1,36 +1,36 @@
 #include <stdio.h>
 #include "codexion.h"
 
-static void	print_config(struct s_simulation *simulation_data)
+static void	imprimir_configuracion(struct s_simulacion *datos_simulacion)
 {
-	printf("number_of_coders: %d\n",
-		simulation_data->shared_resource.config.number_of_coders);
-	printf("time_to_burnout: %d\n",
-		simulation_data->shared_resource.config.time_to_burnout);
-	printf("time_to_compile: %d\n",
-		simulation_data->shared_resource.config.time_to_compile);
-	printf("time_to_debug: %d\n",
-		simulation_data->shared_resource.config.time_to_debug);
-	printf("time_to_refactor: %d\n",
-		simulation_data->shared_resource.config.time_to_refactor);
-	printf("number_of_compiles_required: %d\n",
-		simulation_data->shared_resource.config.number_of_compiles_required);
-	printf("dongle_cooldown: %d\n",
-		simulation_data->shared_resource.config.dongle_cooldown);
-	printf("scheduler: %s\n",
-		simulation_data->shared_resource.config.scheduler);
+	printf("cantidad_desarrolladores: %d\n",
+		datos_simulacion->recurso_compartido.configuracion.cantidad_desarrolladores);
+	printf("tiempo_agotamiento: %d\n",
+		datos_simulacion->recurso_compartido.configuracion.tiempo_agotamiento);
+	printf("tiempo_compilar: %d\n",
+		datos_simulacion->recurso_compartido.configuracion.tiempo_compilar);
+	printf("tiempo_depurar: %d\n",
+		datos_simulacion->recurso_compartido.configuracion.tiempo_depurar);
+	printf("tiempo_refactorizar: %d\n",
+		datos_simulacion->recurso_compartido.configuracion.tiempo_refactorizar);
+	printf("compilaciones_requeridas: %d\n", datos_simulacion->recurso_compartido
+		.configuracion.compilaciones_requeridas);
+	printf("enfriamiento_dongle: %d\n",
+		datos_simulacion->recurso_compartido.configuracion.enfriamiento_dongle);
+	printf("planificador: %s\n",
+		datos_simulacion->recurso_compartido.configuracion.planificador);
 }
 
 int	main(int argc, char **argv)
 {
-	struct s_config		config;
-	struct s_simulation	simulation_data;
+	struct s_configuracion	configuracion;
+	struct s_simulacion	datos_simulacion;
 
-	if (!parseo(argc, argv, &config))
+	if (!parseo(argc, argv, &configuracion))
 		return (1);
-	if (!init_simulation(&simulation_data, &config))
+	if (!iniciar_simulacion(&datos_simulacion, &configuracion))
 		return (1);
-	print_config(&simulation_data);
-	destroy_simulation(&simulation_data);
+	imprimir_configuracion(&datos_simulacion);
+	destruir_simulacion(&datos_simulacion);
 	return (0);
 }

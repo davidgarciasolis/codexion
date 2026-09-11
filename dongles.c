@@ -2,302 +2,240 @@
 #include <string.h>
 #include <time.h>
 
-void	add_task(struct s_shared_resource *shared_resource,
-	struct s_developer *developer)
+static int	debe_priorizarse(struct s_recurso_compartido *recurso,
+	struct s_tarea *primera, struct s_tarea *segunda)
 {
-	int	index;
-	int	parent;
-	int	must_swap;
-	struct s_task	temporary;
+	if (strcmp(recurso->configuracion.planificador, "edf") == 0)
+		return (primera->fecha_limite < segunda->fecha_limite || (primera->fecha_limite
+			== segunda->fecha_limite && primera->orden_llegada < segunda->orden_llegada));
+	return (primera->orden_llegada < segunda->orden_llegada);
+}
 
-	index = shared_resource->task_count;
-	pthread_mutex_lock(&shared_resource->state_mutex);
-	shared_resource->tasks[index].developer = developer;
-	shared_resource->tasks[index].arrival_order =
-		shared_resource->next_task_order++;
-	shared_resource->tasks[index].deadline = developer->last_compile_start
-		+ shared_resource->config.time_to_burnout;
-	pthread_mutex_unlock(&shared_resource->state_mutex);
-	shared_resource->task_count++;
-	while (index > 0)
+static void	agregar_tarea(struct s_recurso_compartido *recurso,
+	struct s_desarrollador *desarrollador)
+{
+	int indice, padre;
+	struct s_tarea temporal;
+
+	indice = recurso->cantidad_tareas;
+	pthread_mutex_lock(&recurso->mutex_estado);
+	recurso->tareas[indice].desarrollador = desarrollador;
+	recurso->tareas[indice].orden_llegada = recurso->siguiente_orden_tarea++;
+	recurso->tareas[indice].fecha_limite = desarrollador->inicio_ultima_compilacion
+		+ recurso->configuracion.tiempo_agotamiento;
+	pthread_mutex_unlock(&recurso->mutex_estado);
+	recurso->cantidad_tareas++;
+	while (indice > 0)
 	{
-		parent = (index - 1) / 2;
-		must_swap = shared_resource->tasks[index].arrival_order
-			< shared_resource->tasks[parent].arrival_order;
-		if (strcmp(shared_resource->config.scheduler, "edf") == 0)
-			must_swap = (shared_resource->tasks[index].deadline
-				< shared_resource->tasks[parent].deadline || (shared_resource->tasks[index].deadline
-				== shared_resource->tasks[parent].deadline && must_swap));
-		if (!must_swap)
+		padre = (indice - 1) / 2;
+		if (!debe_priorizarse(recurso, &recurso->tareas[indice], &recurso->tareas[padre]))
 			break ;
-		temporary = shared_resource->tasks[index];
-		shared_resource->tasks[index] = shared_resource->tasks[parent];
-		shared_resource->tasks[parent] = temporary;
-		index = parent;
+		temporal = recurso->tareas[indice];
+		recurso->tareas[indice] = recurso->tareas[padre];
+		recurso->tareas[padre] = temporal;
+		indice = padre;
 	}
 }
 
-int	is_first_task(struct s_shared_resource *shared_resource,
-	struct s_developer *developer)
+static int	es_primera_tarea(struct s_recurso_compartido *recurso,
+	struct s_desarrollador *desarrollador)
 {
-	if (shared_resource->task_count == 0)
-		return (0);
-	if (shared_resource->tasks[0].developer == developer)
-		return (1);
+	return (recurso->cantidad_tareas > 0 && recurso->tareas[0].desarrollador == desarrollador);
+}
+
+static int	dongles_listos(struct s_recurso_compartido *recurso,
+	int izquierdo, int derecho)
+{
+	int listos;
+	long tiempo_actual;
+
+	pthread_mutex_lock(&recurso->dongles[izquierdo].mutex);
+	pthread_mutex_lock(&recurso->dongles[derecho].mutex);
+	tiempo_actual = obtener_tiempo();
+	listos = (recurso->dongles[izquierdo].disponible
+		&& recurso->dongles[izquierdo].enfriamiento_hasta <= tiempo_actual
+		&& recurso->dongles[derecho].disponible
+		&& recurso->dongles[derecho].enfriamiento_hasta <= tiempo_actual);
+	pthread_mutex_unlock(&recurso->dongles[derecho].mutex);
+	pthread_mutex_unlock(&recurso->dongles[izquierdo].mutex);
+	return (listos);
+}
+
+static void	reservar_dongles(struct s_recurso_compartido *recurso,
+	int izquierdo, int derecho)
+{
+	pthread_mutex_lock(&recurso->dongles[izquierdo].mutex);
+	pthread_mutex_lock(&recurso->dongles[derecho].mutex);
+	recurso->dongles[izquierdo].disponible = 0;
+	recurso->dongles[derecho].disponible = 0;
+	pthread_mutex_unlock(&recurso->dongles[derecho].mutex);
+	pthread_mutex_unlock(&recurso->dongles[izquierdo].mutex);
+}
+
+static void	esperar_dongles(struct s_recurso_compartido *recurso,
+	int izquierdo, int derecho)
+{
+	long esperar_hasta, tiempo_actual;
+	struct timespec limite;
+
+	pthread_mutex_lock(&recurso->dongles[izquierdo].mutex);
+	pthread_mutex_lock(&recurso->dongles[derecho].mutex);
+	esperar_hasta = recurso->dongles[izquierdo].enfriamiento_hasta;
+	if (recurso->dongles[derecho].enfriamiento_hasta > esperar_hasta)
+		esperar_hasta = recurso->dongles[derecho].enfriamiento_hasta;
+	pthread_mutex_unlock(&recurso->dongles[derecho].mutex);
+	pthread_mutex_unlock(&recurso->dongles[izquierdo].mutex);
+	tiempo_actual = obtener_tiempo();
+	if (esperar_hasta <= tiempo_actual)
+		esperar_hasta = tiempo_actual + 1;
+	limite.tv_sec = esperar_hasta / 1000;
+	limite.tv_nsec = (esperar_hasta % 1000) * 1000000;
+	pthread_cond_timedwait(&recurso->condicion_planificador,
+		&recurso->mutex_planificador, &limite);
+}
+
+static int	tomar_dongles_unico(struct s_desarrollador *desarrollador)
+{
+	struct s_recurso_compartido	*recurso;
+	long					fecha_limite;
+	struct timespec			limite;
+
+	recurso = desarrollador->recurso_compartido;
+	pthread_mutex_lock(&recurso->mutex_estado);
+	fecha_limite = desarrollador->inicio_ultima_compilacion
+		+ recurso->configuracion.tiempo_agotamiento;
+	pthread_mutex_unlock(&recurso->mutex_estado);
+	limite.tv_sec = fecha_limite / 1000;
+	limite.tv_nsec = (fecha_limite % 1000) * 1000000;
+	pthread_mutex_lock(&recurso->mutex_planificador);
+	while (!simulacion_detenida(recurso) && obtener_tiempo() < fecha_limite)
+		pthread_cond_timedwait(&recurso->condicion_planificador,
+			&recurso->mutex_planificador, &limite);
+	if (!simulacion_detenida(recurso) && obtener_tiempo() >= fecha_limite)
+	{
+		pthread_mutex_lock(&recurso->mutex_estado);
+		recurso->detenida = 1;
+		pthread_mutex_unlock(&recurso->mutex_estado);
+		pthread_cond_broadcast(&recurso->condicion_planificador);
+	}
+	pthread_mutex_unlock(&recurso->mutex_planificador);
 	return (0);
 }
 
-int	dongles_are_ready(struct s_shared_resource *shared_resource,
-	int left_dongle, int right_dongle)
+static void	reparar_monticulo(struct s_recurso_compartido *recurso, int indice)
 {
-	int		are_ready;
-	long	current_time;
+	int izquierdo, derecho, prioritario;
+	struct s_tarea temporal;
 
-	pthread_mutex_lock(&shared_resource->dongles[left_dongle].mutex);
-	if (left_dongle != right_dongle)
-		pthread_mutex_lock(&shared_resource->dongles[right_dongle].mutex);
-	current_time = get_time();
-	are_ready = (shared_resource->dongles[left_dongle].is_available
-		&& shared_resource->dongles[left_dongle].cooldown_until <= current_time
-		&& shared_resource->dongles[right_dongle].is_available
-		&& shared_resource->dongles[right_dongle].cooldown_until <= current_time);
-	if (left_dongle != right_dongle)
-		pthread_mutex_unlock(&shared_resource->dongles[right_dongle].mutex);
-	pthread_mutex_unlock(&shared_resource->dongles[left_dongle].mutex);
-	return (are_ready);
-}
-
-void	reserve_dongles(struct s_shared_resource *shared_resource,
-	int left_dongle, int right_dongle)
-{
-	pthread_mutex_lock(&shared_resource->dongles[left_dongle].mutex);
-	if (left_dongle != right_dongle)
-		pthread_mutex_lock(&shared_resource->dongles[right_dongle].mutex);
-	shared_resource->dongles[left_dongle].is_available = 0;
-	if (left_dongle != right_dongle)
-		shared_resource->dongles[right_dongle].is_available = 0;
-	if (left_dongle != right_dongle)
-		pthread_mutex_unlock(&shared_resource->dongles[right_dongle].mutex);
-	pthread_mutex_unlock(&shared_resource->dongles[left_dongle].mutex);
-}
-
-void	wait_for_dongles(struct s_shared_resource *shared_resource,
-	int left_dongle, int right_dongle)
-{
-	long			wait_until;
-	long			current_time;
-	struct timespec	timeout;
-
-	pthread_mutex_lock(&shared_resource->dongles[left_dongle].mutex);
-	if (left_dongle != right_dongle)
-		pthread_mutex_lock(&shared_resource->dongles[right_dongle].mutex);
-	wait_until = shared_resource->dongles[left_dongle].cooldown_until;
-	if (shared_resource->dongles[right_dongle].cooldown_until > wait_until)
-		wait_until = shared_resource->dongles[right_dongle].cooldown_until;
-	if (left_dongle != right_dongle)
-		pthread_mutex_unlock(&shared_resource->dongles[right_dongle].mutex);
-	pthread_mutex_unlock(&shared_resource->dongles[left_dongle].mutex);
-	current_time = get_time();
-	if (wait_until <= current_time)
-		wait_until = current_time + 1;
-	timeout.tv_sec = wait_until / 1000;
-	timeout.tv_nsec = (wait_until % 1000) * 1000000;
-	pthread_cond_timedwait(&shared_resource->scheduler_cond,
-		&shared_resource->scheduler_mutex, &timeout);
-}
-
-void	remove_first_task(struct s_shared_resource *shared_resource)
-{
-	int	index;
-	int	left_child;
-	int	right_child;
-	int	first_task;
-	int	must_swap;
-	struct s_task	temporary;
-
-	if (shared_resource->task_count == 0)
-		return ;
-	shared_resource->task_count--;
-	if (shared_resource->task_count == 0)
-		return ;
-	shared_resource->tasks[0] =
-		shared_resource->tasks[shared_resource->task_count];
-	index = 0;
 	while (1)
 	{
-		left_child = index * 2 + 1;
-		right_child = index * 2 + 2;
-		first_task = index;
-		if (left_child < shared_resource->task_count)
-		{
-			must_swap = shared_resource->tasks[left_child].arrival_order
-				< shared_resource->tasks[first_task].arrival_order;
-			if (strcmp(shared_resource->config.scheduler, "edf") == 0)
-				must_swap = (shared_resource->tasks[left_child].deadline
-					< shared_resource->tasks[first_task].deadline || (shared_resource->tasks[left_child].deadline
-					== shared_resource->tasks[first_task].deadline && must_swap));
-			if (must_swap)
-				first_task = left_child;
-		}
-		if (right_child < shared_resource->task_count)
-		{
-			must_swap = shared_resource->tasks[right_child].arrival_order
-				< shared_resource->tasks[first_task].arrival_order;
-			if (strcmp(shared_resource->config.scheduler, "edf") == 0)
-				must_swap = (shared_resource->tasks[right_child].deadline
-					< shared_resource->tasks[first_task].deadline || (shared_resource->tasks[right_child].deadline
-					== shared_resource->tasks[first_task].deadline && must_swap));
-			if (must_swap)
-				first_task = right_child;
-		}
-		if (first_task == index)
+		izquierdo = indice * 2 + 1;
+		derecho = indice * 2 + 2;
+		prioritario = indice;
+		if (izquierdo < recurso->cantidad_tareas && debe_priorizarse(recurso,
+				&recurso->tareas[izquierdo], &recurso->tareas[prioritario]))
+			prioritario = izquierdo;
+		if (derecho < recurso->cantidad_tareas && debe_priorizarse(recurso,
+				&recurso->tareas[derecho], &recurso->tareas[prioritario]))
+			prioritario = derecho;
+		if (prioritario == indice)
 			break ;
-		temporary = shared_resource->tasks[index];
-		shared_resource->tasks[index] = shared_resource->tasks[first_task];
-		shared_resource->tasks[first_task] = temporary;
-		index = first_task;
+		temporal = recurso->tareas[indice];
+		recurso->tareas[indice] = recurso->tareas[prioritario];
+		recurso->tareas[prioritario] = temporal;
+		indice = prioritario;
 	}
 }
 
-void	remove_task(struct s_shared_resource *shared_resource,
-	struct s_developer *developer)
+static void	quitar_tarea(struct s_recurso_compartido *recurso,
+	struct s_desarrollador *desarrollador)
 {
-	int			index;
-	int			parent;
-	int			left_child;
-	int			right_child;
-	int			first_task;
-	int			must_swap;
-	struct s_task	temporary;
+	int indice, padre;
+	struct s_tarea temporal;
 
-	index = 0;
-	while (index < shared_resource->task_count
-		&& shared_resource->tasks[index].developer != developer)
-		index++;
-	if (index == shared_resource->task_count)
+	indice = 0;
+	while (indice < recurso->cantidad_tareas && recurso->tareas[indice].desarrollador != desarrollador)
+		indice++;
+	if (indice == recurso->cantidad_tareas)
 		return ;
-	shared_resource->task_count--;
-	if (index == shared_resource->task_count)
+	recurso->cantidad_tareas--;
+	if (indice == recurso->cantidad_tareas)
 		return ;
-	shared_resource->tasks[index] =
-		shared_resource->tasks[shared_resource->task_count];
-	while (index > 0)
+	recurso->tareas[indice] = recurso->tareas[recurso->cantidad_tareas];
+	while (indice > 0)
 	{
-		parent = (index - 1) / 2;
-		must_swap = (strcmp(shared_resource->config.scheduler, "fifo") == 0
-			&& shared_resource->tasks[index].arrival_order
-			< shared_resource->tasks[parent].arrival_order)
-			|| (strcmp(shared_resource->config.scheduler, "edf") == 0
-			&& (shared_resource->tasks[index].deadline
-			< shared_resource->tasks[parent].deadline
-			|| (shared_resource->tasks[index].deadline
-			== shared_resource->tasks[parent].deadline
-			&& shared_resource->tasks[index].arrival_order
-			< shared_resource->tasks[parent].arrival_order)));
-		if (!must_swap)
+		padre = (indice - 1) / 2;
+		if (!debe_priorizarse(recurso, &recurso->tareas[indice], &recurso->tareas[padre]))
 			break ;
-		temporary = shared_resource->tasks[index];
-		shared_resource->tasks[index] = shared_resource->tasks[parent];
-		shared_resource->tasks[parent] = temporary;
-		index = parent;
+		temporal = recurso->tareas[indice];
+		recurso->tareas[indice] = recurso->tareas[padre];
+		recurso->tareas[padre] = temporal;
+		indice = padre;
 	}
-	while (1)
-	{
-		left_child = index * 2 + 1;
-		right_child = index * 2 + 2;
-		first_task = index;
-		if (left_child < shared_resource->task_count)
-		{
-			must_swap = (strcmp(shared_resource->config.scheduler, "fifo") == 0
-				&& shared_resource->tasks[left_child].arrival_order
-				< shared_resource->tasks[first_task].arrival_order)
-				|| (strcmp(shared_resource->config.scheduler, "edf") == 0
-				&& (shared_resource->tasks[left_child].deadline
-				< shared_resource->tasks[first_task].deadline
-				|| (shared_resource->tasks[left_child].deadline
-				== shared_resource->tasks[first_task].deadline
-				&& shared_resource->tasks[left_child].arrival_order
-				< shared_resource->tasks[first_task].arrival_order)));
-			if (must_swap)
-				first_task = left_child;
-		}
-		if (right_child < shared_resource->task_count)
-		{
-			must_swap = (strcmp(shared_resource->config.scheduler, "fifo") == 0
-				&& shared_resource->tasks[right_child].arrival_order
-				< shared_resource->tasks[first_task].arrival_order)
-				|| (strcmp(shared_resource->config.scheduler, "edf") == 0
-				&& (shared_resource->tasks[right_child].deadline
-				< shared_resource->tasks[first_task].deadline
-				|| (shared_resource->tasks[right_child].deadline
-				== shared_resource->tasks[first_task].deadline
-				&& shared_resource->tasks[right_child].arrival_order
-				< shared_resource->tasks[first_task].arrival_order)));
-			if (must_swap)
-				first_task = right_child;
-		}
-		if (first_task == index)
-			break ;
-		temporary = shared_resource->tasks[index];
-		shared_resource->tasks[index] = shared_resource->tasks[first_task];
-		shared_resource->tasks[first_task] = temporary;
-		index = first_task;
-	}
-}
-void	release_dongles(struct s_developer *developer)
-{
-	struct s_shared_resource	*shared_resource;
-	int					left_dongle;
-	int					right_dongle;
-	long					cooldown_until;
-
-	shared_resource = developer->shared_resource;
-	left_dongle = developer->id - 1;
-	right_dongle = developer->id
-		% shared_resource->config.number_of_coders;
-	pthread_mutex_lock(&shared_resource->scheduler_mutex);
-	pthread_mutex_lock(&shared_resource->dongles[left_dongle].mutex);
-	if (left_dongle != right_dongle)
-		pthread_mutex_lock(&shared_resource->dongles[right_dongle].mutex);
-	cooldown_until = get_time() + shared_resource->config.dongle_cooldown;
-	shared_resource->dongles[left_dongle].is_available = 1;
-	shared_resource->dongles[left_dongle].cooldown_until = cooldown_until;
-	if (left_dongle != right_dongle)
-	{
-		shared_resource->dongles[right_dongle].is_available = 1;
-		shared_resource->dongles[right_dongle].cooldown_until = cooldown_until;
-		pthread_mutex_unlock(&shared_resource->dongles[right_dongle].mutex);
-	}
-	pthread_mutex_unlock(&shared_resource->dongles[left_dongle].mutex);
-	pthread_cond_broadcast(&shared_resource->scheduler_cond);
-	pthread_mutex_unlock(&shared_resource->scheduler_mutex);
+	reparar_monticulo(recurso, indice);
 }
 
-int	take_dongles(struct s_developer *developer)
+static void	quitar_primera_tarea(struct s_recurso_compartido *recurso)
 {
-	struct s_shared_resource	*shared_resource;
-	int					left_dongle;
-	int					right_dongle;
+	if (recurso->cantidad_tareas == 0)
+		return ;
+	recurso->cantidad_tareas--;
+	if (recurso->cantidad_tareas == 0)
+		return ;
+	recurso->tareas[0] = recurso->tareas[recurso->cantidad_tareas];
+	reparar_monticulo(recurso, 0);
+}
 
-	shared_resource = developer->shared_resource;
-	left_dongle = developer->id - 1;
-	right_dongle = developer->id
-		% shared_resource->config.number_of_coders;
-	pthread_mutex_lock(&shared_resource->scheduler_mutex);
-	add_task(shared_resource, developer);
-	while (!is_simulation_stopped(shared_resource))
+void	liberar_dongles(struct s_desarrollador *desarrollador)
+{
+	struct s_recurso_compartido *recurso;
+	int izquierdo, derecho;
+	long enfriamiento_hasta;
+
+	recurso = desarrollador->recurso_compartido;
+	if (recurso->configuracion.cantidad_desarrolladores == 1)
+		return ;
+	izquierdo = desarrollador->id - 1;
+	derecho = desarrollador->id % recurso->configuracion.cantidad_desarrolladores;
+	pthread_mutex_lock(&recurso->mutex_planificador);
+	pthread_mutex_lock(&recurso->dongles[izquierdo].mutex);
+	pthread_mutex_lock(&recurso->dongles[derecho].mutex);
+	enfriamiento_hasta = obtener_tiempo() + recurso->configuracion.enfriamiento_dongle;
+	recurso->dongles[izquierdo].disponible = 1;
+	recurso->dongles[izquierdo].enfriamiento_hasta = enfriamiento_hasta;
+	recurso->dongles[derecho].disponible = 1;
+	recurso->dongles[derecho].enfriamiento_hasta = enfriamiento_hasta;
+	pthread_mutex_unlock(&recurso->dongles[derecho].mutex);
+	pthread_mutex_unlock(&recurso->dongles[izquierdo].mutex);
+	pthread_cond_broadcast(&recurso->condicion_planificador);
+	pthread_mutex_unlock(&recurso->mutex_planificador);
+}
+
+int	tomar_dongles(struct s_desarrollador *desarrollador)
+{
+	struct s_recurso_compartido *recurso;
+	int izquierdo, derecho;
+
+	recurso = desarrollador->recurso_compartido;
+	if (recurso->configuracion.cantidad_desarrolladores == 1)
+		return (tomar_dongles_unico(desarrollador));
+	izquierdo = desarrollador->id - 1;
+	derecho = desarrollador->id % recurso->configuracion.cantidad_desarrolladores;
+	pthread_mutex_lock(&recurso->mutex_planificador);
+	agregar_tarea(recurso, desarrollador);
+	while (!simulacion_detenida(recurso))
 	{
-		if (is_first_task(shared_resource, developer)
-			&& dongles_are_ready(shared_resource, left_dongle, right_dongle))
+		if (es_primera_tarea(recurso, desarrollador)
+			&& dongles_listos(recurso, izquierdo, derecho))
 		{
-			reserve_dongles(shared_resource, left_dongle, right_dongle);
-			remove_first_task(shared_resource);
-			pthread_mutex_unlock(&shared_resource->scheduler_mutex);
+			reservar_dongles(recurso, izquierdo, derecho);
+			quitar_primera_tarea(recurso);
+			pthread_mutex_unlock(&recurso->mutex_planificador);
 			return (1);
 		}
-		wait_for_dongles(shared_resource, left_dongle, right_dongle);
+		esperar_dongles(recurso, izquierdo, derecho);
 	}
-	remove_task(shared_resource, developer);
-	pthread_mutex_unlock(&shared_resource->scheduler_mutex);
+	quitar_tarea(recurso, desarrollador);
+	pthread_mutex_unlock(&recurso->mutex_planificador);
 	return (0);
 }

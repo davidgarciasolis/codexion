@@ -4,82 +4,84 @@
 #include <string.h>
 #include "codexion.h"
 
-static int	is_positive_int(char *argument, int argument_index)
+static int	es_entero_positivo(char *argumento, int indice_argumento)
 {
-	int		value;
-	long	next_value;
-	int		index;
+	int		valor;
+	long	siguiente_valor;
+	int		indice;
 
-	if (argument[0] == '\0')
+	if (argumento[0] == '\0')
 	{
-		printf("Error: el argumento %d no puede estar vacío.\n", argument_index);
+		printf("Error: el argumento %d no puede estar vacío.\n", indice_argumento);
 		return (0);
 	}
-	value = 0;
-	index = 0;
-	while (argument[index] != '\0')
+	valor = 0;
+	indice = 0;
+	while (argumento[indice] != '\0')
 	{
-		if (argument[index] < '0' || argument[index] > '9')
+		if (argumento[indice] < '0' || argumento[indice] > '9')
 		{
 			printf("Error: el argumento %d debe contener solo dígitos.\n",
-				argument_index);
+				indice_argumento);
 			return (0);
 		}
-		next_value = (long)value * 10 + (argument[index] - '0');
-		if (next_value > INT_MAX)
+		siguiente_valor = (long)valor * 10 + (argumento[indice] - '0');
+		if (siguiente_valor > INT_MAX)
 		{
 			printf("Error: el argumento %d no puede superar INT_MAX (%d).\n",
-				argument_index, INT_MAX);
+				indice_argumento, INT_MAX);
 			return (0);
 		}
-		value = (int)next_value;
-		index++;
+		valor = (int)siguiente_valor;
+		indice++;
 	}
-	if (value == 0)
+	if (valor == 0)
 	{
 		printf("Error: el argumento %d debe ser mayor que 0.\n",
-			argument_index);
+			indice_argumento);
 		return (0);
 	}
 	return (1);
 }
 
-static void	fill_config(struct s_config *config, char **argv)
+static void	rellenar_configuracion(struct s_configuracion *configuracion,
+	char **argumentos)
 {
-	config->number_of_coders = atoi(argv[1]);
-	config->time_to_burnout = atoi(argv[2]);
-	config->time_to_compile = atoi(argv[3]);
-	config->time_to_debug = atoi(argv[4]);
-	config->time_to_refactor = atoi(argv[5]);
-	config->number_of_compiles_required = atoi(argv[6]);
-	config->dongle_cooldown = atoi(argv[7]);
-	config->scheduler = argv[8];
+	configuracion->cantidad_desarrolladores = atoi(argumentos[1]);
+	configuracion->tiempo_agotamiento = atoi(argumentos[2]);
+	configuracion->tiempo_compilar = atoi(argumentos[3]);
+	configuracion->tiempo_depurar = atoi(argumentos[4]);
+	configuracion->tiempo_refactorizar = atoi(argumentos[5]);
+	configuracion->compilaciones_requeridas = atoi(argumentos[6]);
+	configuracion->enfriamiento_dongle = atoi(argumentos[7]);
+	configuracion->planificador = argumentos[8];
 }
 
-int	parseo(int argc, char **argv, struct s_config *config)
+int	parseo(int cantidad_argumentos, char **argumentos,
+	struct s_configuracion *configuracion)
 {
-	int	index;
+	int	indice;
 
-	if (argc != 9)
+	if (cantidad_argumentos != 9)
 	{
 		printf("Error: número de argumentos incorrecto.\n");
-		printf("Uso: %s number_of_coders time_to_burnout ", argv[0]);
-		printf("time_to_compile time_to_debug time_to_refactor ");
-		printf("number_of_compiles_required dongle_cooldown scheduler\n");
+		printf("Uso: %s cantidad_desarrolladores tiempo_agotamiento ", argumentos[0]);
+		printf("tiempo_compilar tiempo_depurar tiempo_refactorizar ");
+		printf("compilaciones_requeridas enfriamiento_dongle planificador\n");
 		return (0);
 	}
-	index = 1;
-	while (index < 8)
+	indice = 1;
+	while (indice < 8)
 	{
-		if (!is_positive_int(argv[index], index))
+		if (!es_entero_positivo(argumentos[indice], indice))
 			return (0);
-		index++;
+		indice++;
 	}
-	if (strcmp(argv[8], "fifo") != 0 && strcmp(argv[8], "edf") != 0)
+	if (strcmp(argumentos[8], "fifo") != 0 && strcmp(argumentos[8], "edf") != 0)
 	{
-		printf("Error: scheduler debe ser fifo o edf.\n");
+		printf("Error: planificador debe ser fifo o edf.\n");
 		return (0);
 	}
-	fill_config(config, argv);
+	rellenar_configuracion(configuracion, argumentos);
 	return (1);
 }

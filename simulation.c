@@ -1,172 +1,174 @@
 #include <stdlib.h>
 #include "codexion.h"
 
-static void	destroy_tasks(struct s_shared_resource *shared_resource)
+static void	destruir_tareas(struct s_recurso_compartido *recurso_compartido)
 {
-	free(shared_resource->tasks);
-	shared_resource->tasks = NULL;
-	shared_resource->task_count = 0;
+	free(recurso_compartido->tareas);
+	recurso_compartido->tareas = NULL;
+	recurso_compartido->cantidad_tareas = 0;
 }
 
-static int	init_tasks(struct s_shared_resource *shared_resource)
+static int	iniciar_tareas(struct s_recurso_compartido *recurso_compartido)
 {
-	int	index;
+	int	indice;
 
-	shared_resource->tasks = malloc(sizeof(struct s_task)
-			* shared_resource->config.number_of_coders);
-	if (shared_resource->tasks == NULL)
+	recurso_compartido->tareas = malloc(sizeof(struct s_tarea)
+			* recurso_compartido->configuracion.cantidad_desarrolladores);
+	if (recurso_compartido->tareas == NULL)
 		return (0);
-	index = 0;
-	while (index < shared_resource->config.number_of_coders)
+	indice = 0;
+	while (indice < recurso_compartido->configuracion.cantidad_desarrolladores)
 	{
-		shared_resource->tasks[index].developer = NULL;
-		shared_resource->tasks[index].arrival_order = 0;
-		shared_resource->tasks[index].deadline = 0;
-		index++;
+		recurso_compartido->tareas[indice].desarrollador = NULL;
+		recurso_compartido->tareas[indice].orden_llegada = 0;
+		recurso_compartido->tareas[indice].fecha_limite = 0;
+		indice++;
 	}
-	shared_resource->task_count = 0;
-	shared_resource->next_task_order = 0;
+	recurso_compartido->cantidad_tareas = 0;
+	recurso_compartido->siguiente_orden_tarea = 0;
 	return (1);
 }
 
-static void	destroy_dongles(struct s_shared_resource *shared_resource)
+static void	destruir_dongles(struct s_recurso_compartido *recurso_compartido)
 {
-	int	index;
+	int	indice;
 
-	if (shared_resource->dongles == NULL)
+	if (recurso_compartido->dongles == NULL)
 		return ;
-	index = 0;
-	while (index < shared_resource->config.number_of_coders)
+	indice = 0;
+	while (indice < recurso_compartido->configuracion.cantidad_desarrolladores)
 	{
-		pthread_mutex_destroy(&shared_resource->dongles[index].mutex);
-		index++;
+		pthread_mutex_destroy(&recurso_compartido->dongles[indice].mutex);
+		indice++;
 	}
-	free(shared_resource->dongles);
-	shared_resource->dongles = NULL;
+	free(recurso_compartido->dongles);
+	recurso_compartido->dongles = NULL;
 }
 
-static int	init_dongles(struct s_shared_resource *shared_resource)
+static int	iniciar_dongles(struct s_recurso_compartido *recurso_compartido)
 {
-	int	index;
+	int	indice;
 
-	shared_resource->dongles = malloc(sizeof(struct s_dongle)
-			* shared_resource->config.number_of_coders);
-	if (shared_resource->dongles == NULL)
+	recurso_compartido->dongles = malloc(sizeof(struct s_dongle)
+			* recurso_compartido->configuracion.cantidad_desarrolladores);
+	if (recurso_compartido->dongles == NULL)
 		return (0);
-	index = 0;
-	while (index < shared_resource->config.number_of_coders)
+	indice = 0;
+	while (indice < recurso_compartido->configuracion.cantidad_desarrolladores)
 	{
-		shared_resource->dongles[index].is_available = 1;
-		shared_resource->dongles[index].cooldown_until = 0;
-		if (pthread_mutex_init(&shared_resource->dongles[index].mutex, NULL) != 0)
+		recurso_compartido->dongles[indice].disponible = 1;
+		recurso_compartido->dongles[indice].enfriamiento_hasta = 0;
+		if (pthread_mutex_init(&recurso_compartido->dongles[indice].mutex, NULL) != 0)
 		{
-			while (index > 0)
-				pthread_mutex_destroy(&shared_resource->dongles[--index].mutex);
-			free(shared_resource->dongles);
-			shared_resource->dongles = NULL;
+			while (indice > 0)
+				pthread_mutex_destroy(&recurso_compartido->dongles[--indice].mutex);
+			free(recurso_compartido->dongles);
+			recurso_compartido->dongles = NULL;
 			return (0);
 		}
-		index++;
+		indice++;
 	}
 	return (1);
 }
 
-static int	init_shared_resource(struct s_shared_resource *shared_resource,
-	struct s_config *config)
+static int	iniciar_recurso_compartido(struct s_recurso_compartido
+	*recurso_compartido, struct s_configuracion *configuracion)
 {
-	shared_resource->config = *config;
-	shared_resource->stopped = 0;
-	shared_resource->dongles = NULL;
-	shared_resource->tasks = NULL;
-	shared_resource->task_count = 0;
-	shared_resource->next_task_order = 0;
-	shared_resource->start_time = get_time();
-	if (pthread_mutex_init(&shared_resource->print_mutex, NULL) != 0)
+	recurso_compartido->configuracion = *configuracion;
+	recurso_compartido->detenida = 0;
+	recurso_compartido->dongles = NULL;
+	recurso_compartido->tareas = NULL;
+	recurso_compartido->cantidad_tareas = 0;
+	recurso_compartido->siguiente_orden_tarea = 0;
+	recurso_compartido->inicio = obtener_tiempo();
+	if (pthread_mutex_init(&recurso_compartido->mutex_impresion, NULL) != 0)
 		return (0);
-	if (pthread_mutex_init(&shared_resource->state_mutex, NULL) != 0)
+	if (pthread_mutex_init(&recurso_compartido->mutex_estado, NULL) != 0)
 	{
-		pthread_mutex_destroy(&shared_resource->print_mutex);
-		return (0);
-	}
-	if (pthread_mutex_init(&shared_resource->scheduler_mutex, NULL) != 0)
-	{
-		pthread_mutex_destroy(&shared_resource->state_mutex);
-		pthread_mutex_destroy(&shared_resource->print_mutex);
+		pthread_mutex_destroy(&recurso_compartido->mutex_impresion);
 		return (0);
 	}
-	if (pthread_cond_init(&shared_resource->scheduler_cond, NULL) != 0)
+	if (pthread_mutex_init(&recurso_compartido->mutex_planificador, NULL) != 0)
 	{
-		pthread_mutex_destroy(&shared_resource->scheduler_mutex);
-		pthread_mutex_destroy(&shared_resource->state_mutex);
-		pthread_mutex_destroy(&shared_resource->print_mutex);
+		pthread_mutex_destroy(&recurso_compartido->mutex_estado);
+		pthread_mutex_destroy(&recurso_compartido->mutex_impresion);
 		return (0);
 	}
-	if (!init_dongles(shared_resource))
+	if (pthread_cond_init(&recurso_compartido->condicion_planificador, NULL) != 0)
 	{
-		pthread_cond_destroy(&shared_resource->scheduler_cond);
-		pthread_mutex_destroy(&shared_resource->scheduler_mutex);
-		pthread_mutex_destroy(&shared_resource->state_mutex);
-		pthread_mutex_destroy(&shared_resource->print_mutex);
+		pthread_mutex_destroy(&recurso_compartido->mutex_planificador);
+		pthread_mutex_destroy(&recurso_compartido->mutex_estado);
+		pthread_mutex_destroy(&recurso_compartido->mutex_impresion);
 		return (0);
 	}
-	if (!init_tasks(shared_resource))
+	if (!iniciar_dongles(recurso_compartido))
 	{
-		destroy_dongles(shared_resource);
-		pthread_cond_destroy(&shared_resource->scheduler_cond);
-		pthread_mutex_destroy(&shared_resource->scheduler_mutex);
-		pthread_mutex_destroy(&shared_resource->state_mutex);
-		pthread_mutex_destroy(&shared_resource->print_mutex);
+		pthread_cond_destroy(&recurso_compartido->condicion_planificador);
+		pthread_mutex_destroy(&recurso_compartido->mutex_planificador);
+		pthread_mutex_destroy(&recurso_compartido->mutex_estado);
+		pthread_mutex_destroy(&recurso_compartido->mutex_impresion);
+		return (0);
+	}
+	if (recurso_compartido->configuracion.cantidad_desarrolladores > 1
+		&& !iniciar_tareas(recurso_compartido))
+	{
+		destruir_dongles(recurso_compartido);
+		pthread_cond_destroy(&recurso_compartido->condicion_planificador);
+		pthread_mutex_destroy(&recurso_compartido->mutex_planificador);
+		pthread_mutex_destroy(&recurso_compartido->mutex_estado);
+		pthread_mutex_destroy(&recurso_compartido->mutex_impresion);
 		return (0);
 	}
 	return (1);
 }
 
-static void	init_developers(struct s_simulation *simulation_data)
+static void	iniciar_desarrolladores(struct s_simulacion *datos_simulacion)
 {
 	int	index;
 
 	index = 0;
-	while (index < simulation_data->shared_resource.config.number_of_coders)
+	while (index < datos_simulacion->recurso_compartido.configuracion.cantidad_desarrolladores)
 	{
-		simulation_data->developers[index].id = index + 1;
-		simulation_data->developers[index].compiles_done = 0;
-		simulation_data->developers[index].last_compile_start =
-			simulation_data->shared_resource.start_time;
-		simulation_data->developers[index].shared_resource =
-			&simulation_data->shared_resource;
+		datos_simulacion->desarrolladores[index].id = index + 1;
+		datos_simulacion->desarrolladores[index].compilaciones_hechas = 0;
+		datos_simulacion->desarrolladores[index].inicio_ultima_compilacion =
+			datos_simulacion->recurso_compartido.inicio;
+		datos_simulacion->desarrolladores[index].recurso_compartido =
+			&datos_simulacion->recurso_compartido;
 		index++;
 	}
 }
 
-int	init_simulation(struct s_simulation *simulation_data,
-	struct s_config *config)
+int	iniciar_simulacion(struct s_simulacion *datos_simulacion,
+	struct s_configuracion *configuracion)
 {
-	if (!init_shared_resource(&simulation_data->shared_resource, config))
+	if (!iniciar_recurso_compartido(&datos_simulacion->recurso_compartido,
+			configuracion))
 		return (0);
-	simulation_data->developers = malloc(sizeof(struct s_developer)
-			* simulation_data->shared_resource.config.number_of_coders);
-	if (simulation_data->developers == NULL)
+	datos_simulacion->desarrolladores = malloc(sizeof(struct s_desarrollador)
+			* datos_simulacion->recurso_compartido.configuracion.cantidad_desarrolladores);
+	if (datos_simulacion->desarrolladores == NULL)
 	{
-		destroy_tasks(&simulation_data->shared_resource);
-		destroy_dongles(&simulation_data->shared_resource);
-		pthread_cond_destroy(&simulation_data->shared_resource.scheduler_cond);
-		pthread_mutex_destroy(&simulation_data->shared_resource.scheduler_mutex);
-		pthread_mutex_destroy(&simulation_data->shared_resource.print_mutex);
-		pthread_mutex_destroy(&simulation_data->shared_resource.state_mutex);
+		destruir_tareas(&datos_simulacion->recurso_compartido);
+		destruir_dongles(&datos_simulacion->recurso_compartido);
+		pthread_cond_destroy(&datos_simulacion->recurso_compartido.condicion_planificador);
+		pthread_mutex_destroy(&datos_simulacion->recurso_compartido.mutex_planificador);
+		pthread_mutex_destroy(&datos_simulacion->recurso_compartido.mutex_impresion);
+		pthread_mutex_destroy(&datos_simulacion->recurso_compartido.mutex_estado);
 		return (0);
 	}
-	init_developers(simulation_data);
+	iniciar_desarrolladores(datos_simulacion);
 	return (1);
 }
 
-void	destroy_simulation(struct s_simulation *simulation_data)
+void	destruir_simulacion(struct s_simulacion *datos_simulacion)
 {
-	destroy_tasks(&simulation_data->shared_resource);
-	destroy_dongles(&simulation_data->shared_resource);
-	pthread_cond_destroy(&simulation_data->shared_resource.scheduler_cond);
-	pthread_mutex_destroy(&simulation_data->shared_resource.scheduler_mutex);
-	pthread_mutex_destroy(&simulation_data->shared_resource.print_mutex);
-	pthread_mutex_destroy(&simulation_data->shared_resource.state_mutex);
-	free(simulation_data->developers);
-	simulation_data->developers = NULL;
+	destruir_tareas(&datos_simulacion->recurso_compartido);
+	destruir_dongles(&datos_simulacion->recurso_compartido);
+	pthread_cond_destroy(&datos_simulacion->recurso_compartido.condicion_planificador);
+	pthread_mutex_destroy(&datos_simulacion->recurso_compartido.mutex_planificador);
+	pthread_mutex_destroy(&datos_simulacion->recurso_compartido.mutex_impresion);
+	pthread_mutex_destroy(&datos_simulacion->recurso_compartido.mutex_estado);
+	free(datos_simulacion->desarrolladores);
+	datos_simulacion->desarrolladores = NULL;
 }

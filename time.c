@@ -1,14 +1,14 @@
 #include <sys/time.h>
 #include "codexion.h"
 
-long	get_time(void)
+long	obtener_tiempo(void)
 {
-	struct timeval	time;
-	long			seconds;
-	long			microseconds;
+	struct timeval	tiempo;
+	long			segundos;
+	long			microsegundos;
 
-	gettimeofday(&time, NULL);
-	seconds= time.tv_sec * 1000;
-	microseconds = time.tv_usec / 1000;
-	return (seconds + microseconds);
+	gettimeofday(&tiempo, NULL);
+	segundos = tiempo.tv_sec * 1000;
+	microsegundos = tiempo.tv_usec / 1000;
+	return (segundos + microsegundos);
 }

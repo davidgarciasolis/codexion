@@ -3,71 +3,71 @@
 
 # include <pthread.h>
 
-struct s_config
+struct s_configuracion
 {
-	int	number_of_coders;
-	int	time_to_burnout;
-	int	time_to_compile;
-	int	time_to_debug;
-	int	time_to_refactor;
-	int	number_of_compiles_required;
-	int	dongle_cooldown;
-	char	*scheduler;
+	int	cantidad_desarrolladores;
+	int	tiempo_agotamiento;
+	int	tiempo_compilar;
+	int	tiempo_depurar;
+	int	tiempo_refactorizar;
+	int	compilaciones_requeridas;
+	int	enfriamiento_dongle;
+	char	*planificador;
 };
 
 struct s_dongle
 {
-	int				is_available;
-	long			cooldown_until;
+	int			disponible;
+	long			enfriamiento_hasta;
 	pthread_mutex_t	mutex;
 };
 
-struct s_task
+struct s_tarea
 {
-	struct s_developer	*developer;
-	long				arrival_order;
-	long				deadline;
+	struct s_desarrollador	*desarrollador;
+	long				orden_llegada;
+	long				fecha_limite;
 };
 
-struct s_shared_resource
+struct s_recurso_compartido
 {
-	struct s_config	config;
-	struct s_dongle	*dongles;
-	struct s_task		*tasks;
-	long			start_time;
-	long			next_task_order;
-	int				stopped;
-	int				task_count;
-	pthread_mutex_t	print_mutex;
-	pthread_mutex_t	state_mutex;
-	pthread_mutex_t	scheduler_mutex;
-	pthread_cond_t	scheduler_cond;
+	struct s_configuracion	configuracion;
+	struct s_dongle		*dongles;
+	struct s_tarea		*tareas;
+	long				inicio;
+	long				siguiente_orden_tarea;
+	int				detenida;
+	int				cantidad_tareas;
+	pthread_mutex_t		mutex_impresion;
+	pthread_mutex_t		mutex_estado;
+	pthread_mutex_t		mutex_planificador;
+	pthread_cond_t		condicion_planificador;
 };
 
-struct s_developer
+struct s_desarrollador
 {
-	int			id;
-	int			compiles_done;
-	long		last_compile_start;
-	pthread_t	thread;
-	struct s_shared_resource	*shared_resource;
+	int				id;
+	int				compilaciones_hechas;
+	long				inicio_ultima_compilacion;
+	pthread_t		thread;
+	struct s_recurso_compartido	*recurso_compartido;
 };
 
-struct s_simulation
+struct s_simulacion
 {
-	struct s_developer		*developers;
-	struct s_shared_resource	shared_resource;
+	struct s_desarrollador		*desarrolladores;
+	struct s_recurso_compartido	recurso_compartido;
 };
 
-int		parseo(int argc, char **argv, struct s_config *config);
-int		init_simulation(struct s_simulation *simulation_data,
-			struct s_config *config);
-void	destroy_simulation(struct s_simulation *simulation_data);
-long	get_time(void);
-void	*developer_routine(void *argument);
-int		is_simulation_stopped(struct s_shared_resource *shared_resource);
-int		take_dongles(struct s_developer *developer);
-void	release_dongles(struct s_developer *developer);
-void	log_status(struct s_developer *developer, char *status);
+int		parseo(int argc, char **argv, struct s_configuracion *configuracion);
+int		iniciar_simulacion(struct s_simulacion *datos_simulacion,
+			struct s_configuracion *configuracion);
+void	destruir_simulacion(struct s_simulacion *datos_simulacion);
+long	obtener_tiempo(void);
+void	*rutina_desarrollador(void *argumento);
+int		simulacion_detenida(struct s_recurso_compartido *recurso_compartido);
+int		tomar_dongles(struct s_desarrollador *desarrollador);
+void	liberar_dongles(struct s_desarrollador *desarrollador);
+void	registrar_estado(struct s_desarrollador *desarrollador, char *estado);
 
 #endif
