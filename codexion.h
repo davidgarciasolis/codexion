@@ -17,7 +17,7 @@ struct s_configuracion
 
 struct s_dongle
 {
-	int			disponible;
+	int				disponible;
 	long			enfriamiento_hasta;
 	pthread_mutex_t	mutex;
 };
@@ -25,31 +25,35 @@ struct s_dongle
 struct s_tarea
 {
 	struct s_desarrollador	*desarrollador;
-	long				orden_llegada;
-	long				fecha_limite;
+	long					orden_llegada;
+	long					fecha_limite;
+};
+
+struct s_lista_tareas
+{
+	struct s_tarea		*tareas;
+	int					cantidad;
+	long				siguiente_orden_tarea;
+	pthread_mutex_t		mutex;
+	pthread_cond_t		condicion;
 };
 
 struct s_recurso_compartido
 {
 	struct s_configuracion	configuracion;
-	struct s_dongle		*dongles;
-	struct s_tarea		*tareas;
-	long				inicio;
-	long				siguiente_orden_tarea;
-	int				detenida;
-	int				cantidad_tareas;
-	pthread_mutex_t		mutex_impresion;
-	pthread_mutex_t		mutex_estado;
-	pthread_mutex_t		mutex_planificador;
-	pthread_cond_t		condicion_planificador;
+	struct s_dongle			*dongles;
+	long					inicio;
+	int						detenida;
+	pthread_mutex_t			mutex_impresion;
+	pthread_mutex_t			mutex_recurso_compartido;
 };
 
 struct s_desarrollador
 {
-	int				id;
-	int				compilaciones_hechas;
-	long				inicio_ultima_compilacion;
-	pthread_t		thread;
+	int							id;
+	int							compilaciones_hechas;
+	long						inicio_ultima_compilacion;
+	pthread_t					thread;
 	struct s_recurso_compartido	*recurso_compartido;
 };
 
@@ -57,6 +61,7 @@ struct s_simulacion
 {
 	struct s_desarrollador		*desarrolladores;
 	struct s_recurso_compartido	recurso_compartido;
+	struct s_lista_tareas		lista_tareas;
 };
 
 int		parseo(int argc, char **argv, struct s_configuracion *configuracion);

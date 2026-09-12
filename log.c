@@ -7,7 +7,7 @@ void	registrar_estado(struct s_desarrollador *desarrollador, char *estado)
 	long					marca_tiempo;
 
 	recurso_compartido = desarrollador->recurso_compartido;
-	pthread_mutex_lock(&recurso_compartido->mutex_estado);
+	pthread_mutex_lock(&recurso_compartido->mutex_recurso_compartido);
 	if (!recurso_compartido->detenida)
 	{
 		pthread_mutex_lock(&recurso_compartido->mutex_impresion);
@@ -15,5 +15,5 @@ void	registrar_estado(struct s_desarrollador *desarrollador, char *estado)
 		printf("%ld %d %s\n", marca_tiempo, desarrollador->id, estado);
 		pthread_mutex_unlock(&recurso_compartido->mutex_impresion);
 	}
-	pthread_mutex_unlock(&recurso_compartido->mutex_estado);
+	pthread_mutex_unlock(&recurso_compartido->mutex_recurso_compartido);
 }

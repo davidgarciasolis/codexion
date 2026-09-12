@@ -4,11 +4,31 @@
 #include <string.h>
 #include "codexion.h"
 
+static int	comprobar_valor(int *valor, char caracter, int indice_argumento)
+{
+	long	siguiente_valor;
+
+	if (caracter < '0' || caracter > '9')
+	{
+		printf("Error: el argumento %d debe contener solo dígitos.\n",
+			indice_argumento);
+		return (0);
+	}
+	siguiente_valor = (long)*valor * 10 + (caracter - '0');
+	if (siguiente_valor > INT_MAX)
+	{
+		printf("Error: el argumento %d no puede superar INT_MAX (%d).\n",
+			indice_argumento, INT_MAX);
+		return (0);
+	}
+	*valor = (int)siguiente_valor;
+	return (1);
+}
+
 static int	es_entero_positivo(char *argumento, int indice_argumento)
 {
-	int		valor;
-	long	siguiente_valor;
-	int		indice;
+	int	valor;
+	int	indice;
 
 	if (argumento[0] == '\0')
 	{
@@ -19,20 +39,8 @@ static int	es_entero_positivo(char *argumento, int indice_argumento)
 	indice = 0;
 	while (argumento[indice] != '\0')
 	{
-		if (argumento[indice] < '0' || argumento[indice] > '9')
-		{
-			printf("Error: el argumento %d debe contener solo dígitos.\n",
-				indice_argumento);
+		if (!comprobar_valor(&valor, argumento[indice], indice_argumento))
 			return (0);
-		}
-		siguiente_valor = (long)valor * 10 + (argumento[indice] - '0');
-		if (siguiente_valor > INT_MAX)
-		{
-			printf("Error: el argumento %d no puede superar INT_MAX (%d).\n",
-				indice_argumento, INT_MAX);
-			return (0);
-		}
-		valor = (int)siguiente_valor;
 		indice++;
 	}
 	if (valor == 0)
