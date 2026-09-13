@@ -1,19 +1,25 @@
-#include <stdio.h>
 #include "codexion.h"
+#include <stdio.h>
 
-void	registrar_estado(struct s_desarrollador *desarrollador, char *estado)
+void	registrar_estado(t_programador *programador, char *estado)
 {
-	struct s_recurso_compartido	*recurso_compartido;
-	long					marca_tiempo;
+	t_simulacion	*simulacion;
 
-	recurso_compartido = desarrollador->recurso_compartido;
-	pthread_mutex_lock(&recurso_compartido->mutex_recurso_compartido);
-	if (!recurso_compartido->detenida)
-	{
-		pthread_mutex_lock(&recurso_compartido->mutex_impresion);
-		marca_tiempo = obtener_tiempo() - recurso_compartido->inicio;
-		printf("%ld %d %s\n", marca_tiempo, desarrollador->id, estado);
-		pthread_mutex_unlock(&recurso_compartido->mutex_impresion);
-	}
-	pthread_mutex_unlock(&recurso_compartido->mutex_recurso_compartido);
+	simulacion = programador->simulacion;
+	pthread_mutex_lock(&simulacion->cerrojo_impresion);
+	pthread_mutex_lock(&simulacion->cerrojo);
+	if (!simulacion->detenida)
+		printf("%ld %d %s\n", tiempo_ms() - simulacion->inicio, programador->id, estado);
+	pthread_mutex_unlock(&simulacion->cerrojo);
+	pthread_mutex_unlock(&simulacion->cerrojo_impresion);
+}
+
+void	registrar_agotamiento(t_programador *programador)
+{
+	t_simulacion	*simulacion;
+
+	simulacion = programador->simulacion;
+	pthread_mutex_lock(&simulacion->cerrojo_impresion);
+	printf("%ld %d se agotó\n", tiempo_ms() - simulacion->inicio, programador->id);
+	pthread_mutex_unlock(&simulacion->cerrojo_impresion);
 }

@@ -1,36 +1,38 @@
-#include <stdio.h>
 #include "codexion.h"
 
-static void	imprimir_configuracion(struct s_simulacion *datos_simulacion)
+static int	iniciar_programadores(t_simulacion *simulacion)
 {
-	printf("cantidad_desarrolladores: %d\n",
-		datos_simulacion->recurso_compartido.configuracion.cantidad_desarrolladores);
-	printf("tiempo_agotamiento: %d\n",
-		datos_simulacion->recurso_compartido.configuracion.tiempo_agotamiento);
-	printf("tiempo_compilar: %d\n",
-		datos_simulacion->recurso_compartido.configuracion.tiempo_compilar);
-	printf("tiempo_depurar: %d\n",
-		datos_simulacion->recurso_compartido.configuracion.tiempo_depurar);
-	printf("tiempo_refactorizar: %d\n",
-		datos_simulacion->recurso_compartido.configuracion.tiempo_refactorizar);
-	printf("compilaciones_requeridas: %d\n", datos_simulacion->recurso_compartido
-		.configuracion.compilaciones_requeridas);
-	printf("enfriamiento_dongle: %d\n",
-		datos_simulacion->recurso_compartido.configuracion.enfriamiento_dongle);
-	printf("planificador: %s\n",
-		datos_simulacion->recurso_compartido.configuracion.planificador);
+	int	indice;
+
+	indice = 0;
+	while (indice < simulacion->configuracion.programadores)
+	{
+		if (pthread_create(&simulacion->programadores[indice].hilo, NULL, rutina_programador,
+				&simulacion->programadores[indice]))
+		{
+			detener_simulacion(simulacion);
+			break ;
+		}
+		indice++;
+	}
+	return (indice);
 }
 
 int	main(int argc, char **argv)
 {
-	struct s_configuracion	configuracion;
-	struct s_simulacion	datos_simulacion;
+	t_configuracion	configuracion;
+	t_simulacion		simulacion;
+	pthread_t	monitor;
+	int			indice;
 
-	if (!parseo(argc, argv, &configuracion))
+	if (!parsear(argc, argv, &configuracion) || !inicializar_simulacion(&simulacion, &configuracion))
 		return (1);
-	if (!iniciar_simulacion(&datos_simulacion, &configuracion))
-		return (1);
-	imprimir_configuracion(&datos_simulacion);
-	destruir_simulacion(&datos_simulacion);
+	indice = iniciar_programadores(&simulacion);
+	pthread_create(&monitor, NULL, rutina_monitor, &simulacion);
+	while (indice-- > 0)
+		pthread_join(simulacion.programadores[indice].hilo, NULL);
+	detener_simulacion(&simulacion);
+	pthread_join(monitor, NULL);
+	destruir_simulacion(&simulacion);
 	return (0);
 }

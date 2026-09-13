@@ -1,95 +1,53 @@
-#include <stdio.h>
-#include <limits.h>
-#include <stdlib.h>
-#include <string.h>
 #include "codexion.h"
+#include <stdio.h>
+#include <string.h>
 
-static int	comprobar_valor(int *valor, char caracter, int indice_argumento)
+static int	numero(char *texto, long *valor)
 {
-	long	siguiente_valor;
+	long	numero;
 
-	if (caracter < '0' || caracter > '9')
-	{
-		printf("Error: el argumento %d debe contener solo dígitos.\n",
-			indice_argumento);
+	if (!*texto)
 		return (0);
-	}
-	siguiente_valor = (long)*valor * 10 + (caracter - '0');
-	if (siguiente_valor > INT_MAX)
+	numero = 0;
+	while (*texto)
 	{
-		printf("Error: el argumento %d no puede superar INT_MAX (%d).\n",
-			indice_argumento, INT_MAX);
-		return (0);
+		if (*texto < '0' || *texto > '9' || numero > 214748364)
+			return (0);
+		numero = numero * 10 + *texto - '0';
+		texto++;
 	}
-	*valor = (int)siguiente_valor;
+	if (numero <= 0 || numero > 2147483647)
+		return (0);
+	*valor = numero;
 	return (1);
 }
 
-static int	es_entero_positivo(char *argumento, int indice_argumento)
+static void	configurar(t_configuracion *configuracion, long *valor, char *planificador)
 {
-	int	valor;
-	int	indice;
+	configuracion->programadores = (int)valor[0];
+	configuracion->agotamiento = valor[1];
+	configuracion->compilar = valor[2];
+	configuracion->depurar = valor[3];
+	configuracion->refactorizar = valor[4];
+	configuracion->requeridos = (int)valor[5];
+	configuracion->enfriamiento = valor[6];
+	configuracion->edf = !strcmp(planificador, "edf");
+}
 
-	if (argumento[0] == '\0')
-	{
-		printf("Error: el argumento %d no puede estar vacío.\n", indice_argumento);
-		return (0);
-	}
-	valor = 0;
+int	parsear(int argc, char **argv, t_configuracion *configuracion)
+{
+	long	valor[7];
+	int		indice;
+
+	if (argc != 9 || (strcmp(argv[8], "fifo") && strcmp(argv[8], "edf")))
+		return (printf("Error: argumentos no válidos.\n"), 0);
 	indice = 0;
-	while (argumento[indice] != '\0')
+	while (indice < 7)
 	{
-		if (!comprobar_valor(&valor, argumento[indice], indice_argumento))
-			return (0);
+		if (!numero(argv[indice + 1], &valor[indice]))
+			return (printf("Error: los argumentos deben ser enteros positivos.\n"), 0);
 		indice++;
 	}
-	if (valor == 0)
-	{
-		printf("Error: el argumento %d debe ser mayor que 0.\n",
-			indice_argumento);
-		return (0);
-	}
-	return (1);
-}
-
-static void	rellenar_configuracion(struct s_configuracion *configuracion,
-	char **argumentos)
-{
-	configuracion->cantidad_desarrolladores = atoi(argumentos[1]);
-	configuracion->tiempo_agotamiento = atoi(argumentos[2]);
-	configuracion->tiempo_compilar = atoi(argumentos[3]);
-	configuracion->tiempo_depurar = atoi(argumentos[4]);
-	configuracion->tiempo_refactorizar = atoi(argumentos[5]);
-	configuracion->compilaciones_requeridas = atoi(argumentos[6]);
-	configuracion->enfriamiento_dongle = atoi(argumentos[7]);
-	configuracion->planificador = argumentos[8];
-}
-
-int	parseo(int cantidad_argumentos, char **argumentos,
-	struct s_configuracion *configuracion)
-{
-	int	indice;
-
-	if (cantidad_argumentos != 9)
-	{
-		printf("Error: número de argumentos incorrecto.\n");
-		printf("Uso: %s cantidad_desarrolladores tiempo_agotamiento ", argumentos[0]);
-		printf("tiempo_compilar tiempo_depurar tiempo_refactorizar ");
-		printf("compilaciones_requeridas enfriamiento_dongle planificador\n");
-		return (0);
-	}
-	indice = 1;
-	while (indice < 8)
-	{
-		if (!es_entero_positivo(argumentos[indice], indice))
-			return (0);
-		indice++;
-	}
-	if (strcmp(argumentos[8], "fifo") != 0 && strcmp(argumentos[8], "edf") != 0)
-	{
-		printf("Error: planificador debe ser fifo o edf.\n");
-		return (0);
-	}
-	rellenar_configuracion(configuracion, argumentos);
+	configurar(configuracion, valor, argv[8]);
 	return (1);
 }

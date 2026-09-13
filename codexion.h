@@ -3,76 +3,72 @@
 
 # include <pthread.h>
 
-struct s_configuracion
+typedef struct s_configuracion
 {
-	int	cantidad_desarrolladores;
-	int	tiempo_agotamiento;
-	int	tiempo_compilar;
-	int	tiempo_depurar;
-	int	tiempo_refactorizar;
-	int	compilaciones_requeridas;
-	int	enfriamiento_dongle;
-	char	*planificador;
+	int		programadores;
+	long	agotamiento;
+	long	compilar;
+	long	depurar;
+	long	refactorizar;
+	int		requeridos;
+	long	enfriamiento;
+	int		edf;
+}t_configuracion;
+
+typedef struct s_llave
+{
+	int		libre;
+	long	lista_en;
+}t_llave;
+
+typedef struct s_programador	t_programador;
+
+typedef struct s_simulacion
+{
+	t_configuracion	configuracion;
+	t_llave			*llaves;
+	t_programador		*programadores;
+	t_programador		**cola;
+	int			tamano_cola;
+	long			siguiente_turno;
+	long			inicio;
+	int			detenida;
+	int			terminados;
+	pthread_mutex_t	cerrojo;
+	pthread_mutex_t	cerrojo_impresion;
+	pthread_cond_t	cambio;
+}t_simulacion;
+
+struct s_programador
+{
+	int			id;
+	int			compilaciones;
+	int			esperando;
+	int			concedido;
+	long			ultima_compilacion;
+	long			turno;
+	pthread_t		hilo;
+	t_simulacion	*simulacion;
 };
 
-struct s_dongle
-{
-	int				disponible;
-	long			enfriamiento_hasta;
-	pthread_mutex_t	mutex;
-};
-
-struct s_tarea
-{
-	struct s_desarrollador	*desarrollador;
-	long					orden_llegada;
-	long					fecha_limite;
-};
-
-struct s_lista_tareas
-{
-	struct s_tarea		*tareas;
-	int					cantidad;
-	long				siguiente_orden_tarea;
-	pthread_mutex_t		mutex;
-	pthread_cond_t		condicion;
-};
-
-struct s_recurso_compartido
-{
-	struct s_configuracion	configuracion;
-	struct s_dongle			*dongles;
-	long					inicio;
-	int						detenida;
-	pthread_mutex_t			mutex_impresion;
-	pthread_mutex_t			mutex_recurso_compartido;
-};
-
-struct s_desarrollador
-{
-	int							id;
-	int							compilaciones_hechas;
-	long						inicio_ultima_compilacion;
-	pthread_t					thread;
-	struct s_recurso_compartido	*recurso_compartido;
-};
-
-struct s_simulacion
-{
-	struct s_desarrollador		*desarrolladores;
-	struct s_recurso_compartido	recurso_compartido;
-	struct s_lista_tareas		lista_tareas;
-};
-
-int		parseo(int argc, char **argv, struct s_configuracion *configuracion);
-int		iniciar_simulacion(struct s_simulacion *datos_simulacion,
-			struct s_configuracion *configuracion);
-void	destruir_simulacion(struct s_simulacion *datos_simulacion);
-long	obtener_tiempo(void);
-void	*rutina_desarrollador(void *argumento);
-int		simulacion_detenida(struct s_recurso_compartido *recurso_compartido);
-int		tomar_dongles(struct s_desarrollador *desarrollador);
-void	liberar_dongles(struct s_desarrollador *desarrollador);
-void	registrar_estado(struct s_desarrollador *desarrollador, char *estado);
+long	tiempo_ms(void);
+int		parsear(int argc, char **argv, t_configuracion *configuracion);
+int		inicializar_simulacion(t_simulacion *simulacion,
+			t_configuracion *configuracion);
+void	destruir_simulacion(t_simulacion *simulacion);
+void	*rutina_programador(void *argumento);
+void	*rutina_monitor(void *argumento);
+void	registrar_estado(t_programador *programador, char *estado);
+void	registrar_agotamiento(t_programador *programador);
+void	detener_simulacion(t_simulacion *simulacion);
+void	cola_insertar(t_simulacion *simulacion, t_programador *programador);
+void	cola_eliminar(t_simulacion *simulacion, int indice);
+void	conceder_esperando(t_simulacion *simulacion);
+int		puede_tomar(t_programador *programador, long ahora);
+int		va_antes(t_simulacion *simulacion, t_programador *primero,
+			t_programador *segundo);
+int		tomar_llaves(t_programador *programador);
+void	liberar_llaves(t_programador *programador);
+int		esta_detenida(t_simulacion *simulacion);
 
 #endif

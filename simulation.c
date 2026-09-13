@@ -1,66 +1,47 @@
-#include <stdlib.h>
 #include "codexion.h"
+#include <stdlib.h>
 
-static int	iniciar_recurso_compartido(struct s_recurso_compartido
-	*recurso_compartido, struct s_configuracion *configuracion)
+static int	asignar(t_simulacion *simulacion, t_configuracion *configuracion)
 {
-	recurso_compartido->configuracion = *configuracion;
-	recurso_compartido->detenida = 0;
-	recurso_compartido->inicio = obtener_tiempo();
-	if (pthread_mutex_init(&recurso_compartido->mutex_impresion, NULL) != 0)
-		return (0);
-	if (pthread_mutex_init(&recurso_compartido->mutex_recurso_compartido,
-			NULL) != 0)
+	simulacion->llaves = malloc(sizeof(*simulacion->llaves) * configuracion->programadores);
+	simulacion->programadores = malloc(sizeof(*simulacion->programadores) * configuracion->programadores);
+	simulacion->cola = malloc(sizeof(*simulacion->cola) * configuracion->programadores);
+	if (!simulacion->llaves || !simulacion->programadores || !simulacion->cola)
 	{
-		pthread_mutex_destroy(&recurso_compartido->mutex_impresion);
+		free(simulacion->llaves);
+		free(simulacion->programadores);
+		free(simulacion->cola);
 		return (0);
 	}
 	return (1);
 }
 
-static void	iniciar_desarrolladores(struct s_simulacion *datos_simulacion)
+static void	inicializar_programadores(t_simulacion *simulacion)
 {
-	int	index;
+	int	indice;
 
-	index = 0;
-	while (index < datos_simulacion->recurso_compartido.configuracion
-		.cantidad_desarrolladores)
+	indice = 0;
+	while (indice < simulacion->configuracion.programadores)
 	{
-		datos_simulacion->desarrolladores[index].id = index + 1;
-		datos_simulacion->desarrolladores[index].compilaciones_hechas = 0;
-		datos_simulacion->desarrolladores[index].inicio_ultima_compilacion =
-			datos_simulacion->recurso_compartido.inicio;
-		datos_simulacion->desarrolladores[index].recurso_compartido =
-			&datos_simulacion->recurso_compartido;
-		index++;
+		simulacion->llaves[indice].libre = 1;
+		simulacion->programadores[indice].id = indice + 1;
+		simulacion->programadores[indice].ultima_compilacion = simulacion->inicio;
+		simulacion->programadores[indice].simulacion = simulacion;
+		indice++;
 	}
 }
 
-int	iniciar_simulacion(struct s_simulacion *datos_simulacion,
-	struct s_configuracion *configuracion)
+int	inicializar_simulacion(t_simulacion *simulacion, t_configuracion *configuracion)
 {
-	if (!iniciar_recurso_compartido(&datos_simulacion->recurso_compartido,
-			configuracion))
+	*simulacion = (t_simulacion){0};
+	simulacion->configuracion = *configuracion;
+	simulacion->inicio = tiempo_ms();
+	if (!asignar(simulacion, configuracion))
 		return (0);
-	datos_simulacion->desarrolladores = malloc(sizeof(struct s_desarrollador)
-			* datos_simulacion->recurso_compartido.configuracion
-			.cantidad_desarrolladores);
-	if (datos_simulacion->desarrolladores == NULL)
-	{
-		pthread_mutex_destroy(&datos_simulacion->recurso_compartido.mutex_impresion);
-		pthread_mutex_destroy(&datos_simulacion->recurso_compartido
-			.mutex_recurso_compartido);
+	if (pthread_mutex_init(&simulacion->cerrojo, NULL)
+		|| pthread_mutex_init(&simulacion->cerrojo_impresion, NULL)
+		|| pthread_cond_init(&simulacion->cambio, NULL))
 		return (0);
-	}
-	iniciar_desarrolladores(datos_simulacion);
+	inicializar_programadores(simulacion);
 	return (1);
-}
-
-void	destruir_simulacion(struct s_simulacion *datos_simulacion)
-{
-	pthread_mutex_destroy(&datos_simulacion->recurso_compartido.mutex_impresion);
-	pthread_mutex_destroy(&datos_simulacion->recurso_compartido
-		.mutex_recurso_compartido);
-	free(datos_simulacion->desarrolladores);
-	datos_simulacion->desarrolladores = NULL;
 }
