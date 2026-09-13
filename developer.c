@@ -31,8 +31,10 @@ static int	compilar(t_programador *programador)
 static int	completado(t_programador *programador)
 {
 	t_simulacion	*simulacion;
+	int		finalizada;
 
 	simulacion = programador->simulacion;
+	finalizada = 0;
 	pthread_mutex_lock(&simulacion->cerrojo);
 	programador->compilaciones++;
 	if (programador->compilaciones == simulacion->configuracion.requeridos)
@@ -40,9 +42,12 @@ static int	completado(t_programador *programador)
 	if (simulacion->terminados == simulacion->configuracion.programadores)
 	{
 		simulacion->detenida = 1;
+		finalizada = 1;
 		pthread_cond_broadcast(&simulacion->cambio);
 	}
 	pthread_mutex_unlock(&simulacion->cerrojo);
+	if (finalizada)
+		registrar_finalizacion(simulacion);
 	return (!esta_detenida(simulacion));
 }
 

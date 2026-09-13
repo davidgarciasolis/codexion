@@ -60,6 +60,7 @@ void	*rutina_programador(void *argumento);
 void	*rutina_monitor(void *argumento);
 void	registrar_estado(t_programador *programador, char *estado);
 void	registrar_agotamiento(t_programador *programador);
+void	registrar_finalizacion(t_simulacion *simulacion);
 void	detener_simulacion(t_simulacion *simulacion);
 void	cola_insertar(t_simulacion *simulacion, t_programador *programador);
 void	cola_eliminar(t_simulacion *simulacion, int indice);
