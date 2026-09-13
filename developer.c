@@ -1,15 +1,37 @@
 #include "codexion.h"
-#include <unistd.h>
+#include <errno.h>
+#include <sys/time.h>
+
+static void	limite_desde_ahora(struct timespec *limite, long milisegundos)
+{
+	struct timeval	ahora;
+
+	gettimeofday(&ahora, NULL);
+	limite->tv_sec = ahora.tv_sec + milisegundos / 1000;
+	limite->tv_nsec = ahora.tv_usec * 1000
+		+ (milisegundos % 1000) * 1000000L;
+	if (limite->tv_nsec >= 1000000000L)
+	{
+		limite->tv_sec++;
+		limite->tv_nsec -= 1000000000L;
+	}
+}
 
 static int	dormir_o_detener(t_simulacion *simulacion, long milisegundos)
 {
-	while (milisegundos-- > 0)
-	{
-		if (esta_detenida(simulacion))
-			return (0);
-		usleep(1000);
-	}
-	return (!esta_detenida(simulacion));
+	struct timespec	limite;
+	int			resultado;
+	int			activa;
+
+	limite_desde_ahora(&limite, milisegundos);
+	pthread_mutex_lock(&simulacion->cerrojo);
+	resultado = 0;
+	while (!simulacion->detenida && resultado != ETIMEDOUT)
+		resultado = pthread_cond_timedwait(&simulacion->cambio,
+				&simulacion->cerrojo, &limite);
+	activa = !simulacion->detenida;
+	pthread_mutex_unlock(&simulacion->cerrojo);
+	return (activa);
 }
 
 static int	compilar(t_programador *programador)

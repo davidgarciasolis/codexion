@@ -1,6 +1,29 @@
 #include "codexion.h"
 #include <sys/time.h>
 
+static long	siguiente_enfriamiento(t_simulacion *simulacion, long ahora)
+{
+	long	proximo;
+	int		indice;
+
+	proximo = 0;
+	indice = 0;
+	while (indice < simulacion->configuracion.programadores)
+	{
+		if (simulacion->llaves[indice].lista_en > ahora
+			&& (!proximo || simulacion->llaves[indice].lista_en < proximo))
+			proximo = simulacion->llaves[indice].lista_en;
+		indice++;
+	}
+	return (proximo);
+}
+
+static void	limite_en_ms(struct timespec *limite, long milisegundos)
+{
+	limite->tv_sec = milisegundos / 1000;
+	limite->tv_nsec = (milisegundos % 1000) * 1000000L;
+}
+
 int	puede_tomar(t_programador *programador, long ahora)
 {
 	t_simulacion	*simulacion;
@@ -21,24 +44,23 @@ int	puede_tomar(t_programador *programador, long ahora)
 static void	esperar_turno(t_programador *programador)
 {
 	t_simulacion			*simulacion;
-	struct timeval	tiempo;
 	struct timespec	limite;
+	long				proximo;
 
 	simulacion = programador->simulacion;
 	while (!programador->concedido && !simulacion->detenida)
 	{
-		gettimeofday(&tiempo, NULL);
-		limite.tv_sec = tiempo.tv_sec;
-		limite.tv_nsec = (tiempo.tv_usec + 1000) * 1000;
-		if (limite.tv_nsec >= 1000000000)
+		proximo = siguiente_enfriamiento(simulacion, tiempo_ms());
+		if (proximo)
 		{
-			limite.tv_sec++;
-			limite.tv_nsec -= 1000000000;
+			limite_en_ms(&limite, proximo);
+			pthread_cond_timedwait(&simulacion->cambio, &simulacion->cerrojo,
+				&limite);
 		}
-		pthread_cond_timedwait(&simulacion->cambio, &simulacion->cerrojo, &limite);
+		else
+			pthread_cond_wait(&simulacion->cambio, &simulacion->cerrojo);
 		conceder_esperando(simulacion);
 	}
-
 }
 
 int	tomar_llaves(t_programador *programador)
