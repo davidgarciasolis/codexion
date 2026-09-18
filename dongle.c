@@ -6,7 +6,7 @@
 /*   By: davgarc4 <davgarc4@student.42madrid.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/18 17:32:21 by davgarc4          #+#    #+#             */
-/*   Updated: 2026/09/18 17:32:22 by davgarc4         ###   ########.fr       */
+/*   Updated: 2026/09/18 18:02:03 by davgarc4         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,8 +33,8 @@ static long	siguiente_enfriamiento(t_simulacion *simulacion, long ahora)
 int	puede_tomar(t_programador *programador, long ahora)
 {
 	t_simulacion	*simulacion;
-	int		izquierda;
-	int		derecha;
+	int				izquierda;
+	int				derecha;
 
 	simulacion = programador->simulacion;
 	izquierda = programador->id - 1;
@@ -50,9 +50,9 @@ int	puede_tomar(t_programador *programador, long ahora)
 
 static void	esperar_turno(t_programador *programador)
 {
-	t_simulacion			*simulacion;
+	t_simulacion	*simulacion;
 	struct timespec	limite;
-	long				proximo;
+	long			proximo;
 
 	simulacion = programador->simulacion;
 	while (!programador->concedido && !simulacion->detenida)
@@ -90,9 +90,9 @@ int	tomar_llaves(t_programador *programador)
 void	liberar_llaves(t_programador *programador)
 {
 	t_simulacion	*simulacion;
-	int		izquierda;
-	int		derecha;
-	long	lista_en;
+	int				izquierda;
+	int				derecha;
+	long			lista_en;
 
 	simulacion = programador->simulacion;
 	izquierda = programador->id - 1;

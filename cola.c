@@ -6,7 +6,7 @@
 /*   By: davgarc4 <davgarc4@student.42madrid.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/18 17:32:10 by davgarc4          #+#    #+#             */
-/*   Updated: 2026/09/18 17:32:11 by davgarc4         ###   ########.fr       */
+/*   Updated: 2026/09/18 17:56:01 by davgarc4         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,7 +46,8 @@ void	cola_insertar(t_simulacion *simulacion, t_programador *programador)
 	while (indice && va_antes(simulacion, simulacion->cola[indice],
 			simulacion->cola[(indice - 1) / 2]))
 	{
-		intercambiar(&simulacion->cola[indice], &simulacion->cola[(indice - 1) / 2]);
+		intercambiar(&simulacion->cola[indice],
+			&simulacion->cola[(indice - 1) / 2]);
 		indice = (indice - 1) / 2;
 	}
 }
@@ -59,7 +60,8 @@ void	cola_eliminar(t_simulacion *simulacion, int indice)
 	while (indice && va_antes(simulacion, simulacion->cola[indice],
 			simulacion->cola[(indice - 1) / 2]))
 	{
-		intercambiar(&simulacion->cola[indice], &simulacion->cola[(indice - 1) / 2]);
+		intercambiar(&simulacion->cola[indice],
+			&simulacion->cola[(indice - 1) / 2]);
 		indice = (indice - 1) / 2;
 	}
 	while (indice * 2 + 1 < simulacion->tamano_cola)
@@ -69,7 +71,8 @@ void	cola_eliminar(t_simulacion *simulacion, int indice)
 			&& va_antes(simulacion, simulacion->cola[hijo + 1],
 				simulacion->cola[hijo]))
 			hijo++;
-		if (!va_antes(simulacion, simulacion->cola[hijo], simulacion->cola[indice]))
+		if (!va_antes(simulacion, simulacion->cola[hijo],
+				simulacion->cola[indice]))
 			break ;
 		intercambiar(&simulacion->cola[indice], &simulacion->cola[hijo]);
 		indice = hijo;

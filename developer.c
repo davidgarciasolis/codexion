@@ -6,10 +6,9 @@
 /*   By: davgarc4 <davgarc4@student.42madrid.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/18 17:32:15 by davgarc4          #+#    #+#             */
-/*   Updated: 2026/09/18 17:32:16 by davgarc4         ###   ########.fr       */
+/*   Updated: 2026/09/18 17:59:42 by davgarc4         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
-
 
 #include "codexion.h"
 #include <errno.h>
@@ -33,8 +32,8 @@ static void	limite_desde_ahora(struct timespec *limite, long milisegundos)
 static int	dormir_o_detener(t_simulacion *simulacion, long milisegundos)
 {
 	struct timespec	limite;
-	int			resultado;
-	int			activa;
+	int				resultado;
+	int				activa;
 
 	limite_desde_ahora(&limite, milisegundos);
 	pthread_mutex_lock(&simulacion->cerrojo);
@@ -67,7 +66,7 @@ static int	compilar(t_programador *programador)
 static int	completado(t_programador *programador)
 {
 	t_simulacion	*simulacion;
-	int		finalizada;
+	int				finalizada;
 
 	simulacion = programador->simulacion;
 	finalizada = 0;

@@ -6,7 +6,7 @@
 /*   By: davgarc4 <davgarc4@student.42madrid.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/18 17:32:26 by davgarc4          #+#    #+#             */
-/*   Updated: 2026/09/18 17:32:27 by davgarc4         ###   ########.fr       */
+/*   Updated: 2026/09/18 17:56:29 by davgarc4         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,7 +33,8 @@ void	registrar_agotamiento(t_programador *programador)
 
 	simulacion = programador->simulacion;
 	pthread_mutex_lock(&simulacion->cerrojo_impresion);
-	printf("%ld %d se agotó\n", tiempo_ms() - simulacion->inicio, programador->id);
+	printf("%ld %d se agotó\n",
+		tiempo_ms() - simulacion->inicio, programador->id);
 	pthread_mutex_unlock(&simulacion->cerrojo_impresion);
 }
 

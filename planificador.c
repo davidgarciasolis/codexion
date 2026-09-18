@@ -6,7 +6,7 @@
 /*   By: davgarc4 <davgarc4@student.42madrid.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/18 17:33:54 by davgarc4          #+#    #+#             */
-/*   Updated: 2026/09/18 17:33:55 by davgarc4         ###   ########.fr       */
+/*   Updated: 2026/09/18 17:58:41 by davgarc4         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,7 +38,8 @@ static int	mejor_disponible(t_simulacion *simulacion, long ahora)
 	while (indice < simulacion->tamano_cola)
 	{
 		if (puede_tomar(simulacion->cola[indice], ahora) && (mejor == -1
-				|| va_antes(simulacion, simulacion->cola[indice], simulacion->cola[mejor])))
+				|| va_antes(simulacion, simulacion->cola[indice],
+					simulacion->cola[mejor])))
 			mejor = indice;
 		indice++;
 	}

@@ -6,7 +6,7 @@
 /*   By: davgarc4 <davgarc4@student.42madrid.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/18 17:32:31 by davgarc4          #+#    #+#             */
-/*   Updated: 2026/09/18 17:32:32 by davgarc4         ###   ########.fr       */
+/*   Updated: 2026/09/18 18:02:42 by davgarc4         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,9 +34,9 @@ static int	iniciar_programadores(t_simulacion *simulacion)
 int	main(int argc, char **argv)
 {
 	t_configuracion	configuracion;
-	t_simulacion		simulacion;
-	pthread_t	monitor;
-	int			indice;
+	t_simulacion	simulacion;
+	pthread_t		monitor;
+	int				indice;
 
 	if (!parsear(argc, argv, &configuracion)
 		|| !inicializar_simulacion(&simulacion, &configuracion))

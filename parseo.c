@@ -6,7 +6,7 @@
 /*   By: davgarc4 <davgarc4@student.42madrid.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/18 17:32:40 by davgarc4          #+#    #+#             */
-/*   Updated: 2026/09/18 17:32:41 by davgarc4         ###   ########.fr       */
+/*   Updated: 2026/09/18 17:58:08 by davgarc4         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -58,7 +58,8 @@ int	parsear(int argc, char **argv, t_configuracion *configuracion)
 	while (indice < 7)
 	{
 		if (!numero(argv[indice + 1], &valor[indice]))
-			return (printf("Error: los argumentos deben ser enteros positivos.\n"), 0);
+			return (printf("Error: los argumentos"
+					" deben ser enteros positivos.\n"), 0);
 		indice++;
 	}
 	configurar(configuracion, valor, argv[8]);
