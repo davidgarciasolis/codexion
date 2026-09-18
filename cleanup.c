@@ -1,5 +1,17 @@
-#include "codexion.h"
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   cleanup.c                                          :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: davgarc4 <davgarc4@student.42madrid.com    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/09/18 17:29:38 by davgarc4          #+#    #+#             */
+/*   Updated: 2026/09/18 17:31:51 by davgarc4         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include <stdlib.h>
+#include "codexion.h"
 
 void	destruir_simulacion(t_simulacion *simulacion)
 {
