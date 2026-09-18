@@ -6,7 +6,8 @@ static void	conceder(t_simulacion *simulacion, int indice)
 	int	derecha;
 
 	izquierda = simulacion->cola[indice]->id - 1;
-	derecha = simulacion->cola[indice]->id % simulacion->configuracion.programadores;
+	derecha = simulacion->cola[indice]->id
+		% simulacion->configuracion.programadores;
 	simulacion->llaves[izquierda].libre = 0;
 	simulacion->llaves[derecha].libre = 0;
 	simulacion->cola[indice]->esperando = 0;

@@ -22,7 +22,8 @@ static int	numero(char *texto, long *valor)
 	return (1);
 }
 
-static void	configurar(t_configuracion *configuracion, long *valor, char *planificador)
+static void	configurar(t_configuracion *configuracion, long *valor,
+		char *planificador)
 {
 	configuracion->programadores = (int)valor[0];
 	configuracion->agotamiento = valor[1];

@@ -18,12 +18,6 @@ static long	siguiente_enfriamiento(t_simulacion *simulacion, long ahora)
 	return (proximo);
 }
 
-static void	limite_en_ms(struct timespec *limite, long milisegundos)
-{
-	limite->tv_sec = milisegundos / 1000;
-	limite->tv_nsec = (milisegundos % 1000) * 1000000L;
-}
-
 int	puede_tomar(t_programador *programador, long ahora)
 {
 	t_simulacion	*simulacion;
@@ -33,7 +27,8 @@ int	puede_tomar(t_programador *programador, long ahora)
 	simulacion = programador->simulacion;
 	izquierda = programador->id - 1;
 	derecha = programador->id % simulacion->configuracion.programadores;
-	if (!simulacion->llaves[izquierda].libre || simulacion->llaves[izquierda].lista_en > ahora)
+	if (!simulacion->llaves[izquierda].libre
+		|| simulacion->llaves[izquierda].lista_en > ahora)
 		return (0);
 	if (izquierda != derecha && (!simulacion->llaves[derecha].libre
 			|| simulacion->llaves[derecha].lista_en > ahora))
@@ -53,7 +48,8 @@ static void	esperar_turno(t_programador *programador)
 		proximo = siguiente_enfriamiento(simulacion, tiempo_ms());
 		if (proximo)
 		{
-			limite_en_ms(&limite, proximo);
+			limite.tv_sec = proximo / 1000;
+			limite.tv_nsec = (proximo % 1000) * 1000000L;
 			pthread_cond_timedwait(&simulacion->cambio, &simulacion->cerrojo,
 				&limite);
 		}

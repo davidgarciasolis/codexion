@@ -3,9 +3,12 @@
 
 static int	asignar(t_simulacion *simulacion, t_configuracion *configuracion)
 {
-	simulacion->llaves = malloc(sizeof(*simulacion->llaves) * configuracion->programadores);
-	simulacion->programadores = malloc(sizeof(*simulacion->programadores) * configuracion->programadores);
-	simulacion->cola = malloc(sizeof(*simulacion->cola) * configuracion->programadores);
+	simulacion->llaves = malloc(sizeof(*simulacion->llaves)
+			* configuracion->programadores);
+	simulacion->programadores = malloc(sizeof(*simulacion->programadores)
+			* configuracion->programadores);
+	simulacion->cola = malloc(sizeof(*simulacion->cola)
+			* configuracion->programadores);
 	if (!simulacion->llaves || !simulacion->programadores || !simulacion->cola)
 	{
 		free(simulacion->llaves);
@@ -25,13 +28,15 @@ static void	inicializar_programadores(t_simulacion *simulacion)
 	{
 		simulacion->llaves[indice].libre = 1;
 		simulacion->programadores[indice].id = indice + 1;
-		simulacion->programadores[indice].ultima_compilacion = simulacion->inicio;
+		simulacion->programadores[indice].ultima_compilacion
+			= simulacion->inicio;
 		simulacion->programadores[indice].simulacion = simulacion;
 		indice++;
 	}
 }
 
-int	inicializar_simulacion(t_simulacion *simulacion, t_configuracion *configuracion)
+int	inicializar_simulacion(t_simulacion *simulacion,
+		t_configuracion *configuracion)
 {
 	*simulacion = (t_simulacion){0};
 	simulacion->configuracion = *configuracion;

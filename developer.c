@@ -45,7 +45,8 @@ static int	compilar(t_programador *programador)
 	if (programador->simulacion->configuracion.programadores > 1)
 		registrar_estado(programador, "ha tomado una llave");
 	registrar_estado(programador, "está compilando");
-	dormir_o_detener(programador->simulacion, programador->simulacion->configuracion.compilar);
+	dormir_o_detener(programador->simulacion,
+		programador->simulacion->configuracion.compilar);
 	liberar_llaves(programador);
 	return (!esta_detenida(programador->simulacion));
 }
@@ -83,10 +84,12 @@ void	*rutina_programador(void *argumento)
 		if (!compilar(programador) || !completado(programador))
 			break ;
 		registrar_estado(programador, "está depurando");
-		if (!dormir_o_detener(programador->simulacion, programador->simulacion->configuracion.depurar))
+		if (!dormir_o_detener(programador->simulacion,
+				programador->simulacion->configuracion.depurar))
 			break ;
 		registrar_estado(programador, "está refactorizando");
-		if (!dormir_o_detener(programador->simulacion, programador->simulacion->configuracion.refactorizar))
+		if (!dormir_o_detener(programador->simulacion,
+				programador->simulacion->configuracion.refactorizar))
 			break ;
 	}
 	return (NULL);

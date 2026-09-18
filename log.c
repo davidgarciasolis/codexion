@@ -9,7 +9,8 @@ void	registrar_estado(t_programador *programador, char *estado)
 	pthread_mutex_lock(&simulacion->cerrojo_impresion);
 	pthread_mutex_lock(&simulacion->cerrojo);
 	if (!simulacion->detenida)
-		printf("%ld %d %s\n", tiempo_ms() - simulacion->inicio, programador->id, estado);
+		printf("%ld %d %s\n", tiempo_ms() - simulacion->inicio,
+			programador->id, estado);
 	pthread_mutex_unlock(&simulacion->cerrojo);
 	pthread_mutex_unlock(&simulacion->cerrojo_impresion);
 }

@@ -1,12 +1,15 @@
 #include "codexion.h"
 
-int	va_antes(t_simulacion *simulacion, t_programador *primero, t_programador *segundo)
+int	va_antes(t_simulacion *simulacion, t_programador *primero,
+		t_programador *segundo)
 {
 	long	primer_limite;
 	long	segundo_limite;
 
-	primer_limite = primero->ultima_compilacion + simulacion->configuracion.agotamiento;
-	segundo_limite = segundo->ultima_compilacion + simulacion->configuracion.agotamiento;
+	primer_limite = primero->ultima_compilacion
+		+ simulacion->configuracion.agotamiento;
+	segundo_limite = segundo->ultima_compilacion
+		+ simulacion->configuracion.agotamiento;
 	if (simulacion->configuracion.edf)
 		return (primer_limite < segundo_limite || (primer_limite
 				== segundo_limite && primero->turno < segundo->turno));
@@ -50,7 +53,8 @@ void	cola_eliminar(t_simulacion *simulacion, int indice)
 	while (indice * 2 + 1 < simulacion->tamano_cola)
 	{
 		hijo = indice * 2 + 1;
-		if (hijo + 1 < simulacion->tamano_cola && va_antes(simulacion, simulacion->cola[hijo + 1],
+		if (hijo + 1 < simulacion->tamano_cola
+			&& va_antes(simulacion, simulacion->cola[hijo + 1],
 				simulacion->cola[hijo]))
 			hijo++;
 		if (!va_antes(simulacion, simulacion->cola[hijo], simulacion->cola[indice]))

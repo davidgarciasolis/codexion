@@ -7,7 +7,8 @@ static int	iniciar_programadores(t_simulacion *simulacion)
 	indice = 0;
 	while (indice < simulacion->configuracion.programadores)
 	{
-		if (pthread_create(&simulacion->programadores[indice].hilo, NULL, rutina_programador,
+		if (pthread_create(&simulacion->programadores[indice].hilo, NULL,
+				rutina_programador,
 				&simulacion->programadores[indice]))
 		{
 			detener_simulacion(simulacion);
@@ -25,7 +26,8 @@ int	main(int argc, char **argv)
 	pthread_t	monitor;
 	int			indice;
 
-	if (!parsear(argc, argv, &configuracion) || !inicializar_simulacion(&simulacion, &configuracion))
+	if (!parsear(argc, argv, &configuracion)
+		|| !inicializar_simulacion(&simulacion, &configuracion))
 		return (1);
 	indice = iniciar_programadores(&simulacion);
 	pthread_create(&monitor, NULL, rutina_monitor, &simulacion);
