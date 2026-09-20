@@ -16,12 +16,12 @@
 
 static int	asignar(t_simulacion *simulacion, t_configuracion *configuracion)
 {
-	simulacion->llaves = malloc(sizeof(*simulacion->llaves)
-			* configuracion->programadores);
-	simulacion->programadores = malloc(sizeof(*simulacion->programadores)
-			* configuracion->programadores);
-	simulacion->cola = malloc(sizeof(*simulacion->cola)
-			* configuracion->programadores);
+	simulacion->llaves = calloc(configuracion->programadores,
+			sizeof(*simulacion->llaves));
+	simulacion->programadores = calloc(configuracion->programadores,
+			sizeof(*simulacion->programadores));
+	simulacion->cola = calloc(configuracion->programadores,
+			sizeof(*simulacion->cola));
 	if (!simulacion->llaves || !simulacion->programadores || !simulacion->cola)
 	{
 		free(simulacion->llaves);
@@ -56,10 +56,26 @@ int	inicializar_simulacion(t_simulacion *simulacion,
 	simulacion->inicio = tiempo_ms();
 	if (!asignar(simulacion, configuracion))
 		return (0);
-	if (pthread_mutex_init(&simulacion->cerrojo, NULL)
-		|| pthread_mutex_init(&simulacion->cerrojo_impresion, NULL)
-		|| pthread_cond_init(&simulacion->cambio, NULL))
+	if (pthread_mutex_init(&simulacion->cerrojo, NULL))
+		return (free(simulacion->cola), free(simulacion->programadores),
+			free(simulacion->llaves), 0);
+	if (pthread_mutex_init(&simulacion->cerrojo_impresion, NULL))
+	{
+		pthread_mutex_destroy(&simulacion->cerrojo);
+		free(simulacion->cola);
+		free(simulacion->programadores);
+		free(simulacion->llaves);
 		return (0);
+	}
+	if (pthread_cond_init(&simulacion->cambio, NULL))
+	{
+		pthread_mutex_destroy(&simulacion->cerrojo_impresion);
+		pthread_mutex_destroy(&simulacion->cerrojo);
+		free(simulacion->cola);
+		free(simulacion->programadores);
+		free(simulacion->llaves);
+		return (0);
+	}
 	inicializar_programadores(simulacion);
 	return (1);
 }
