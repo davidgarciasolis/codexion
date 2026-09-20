@@ -6,7 +6,7 @@
 /*   By: davgarc4 <davgarc4@student.42madrid.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/18 17:34:01 by davgarc4          #+#    #+#             */
-/*   Updated: 2026/09/18 17:34:02 by davgarc4         ###   ########.fr       */
+/*   Updated: 2026/09/20 16:54:11 by davgarc4         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,20 +61,15 @@ int	inicializar_simulacion(t_simulacion *simulacion,
 			free(simulacion->llaves), 0);
 	if (pthread_mutex_init(&simulacion->cerrojo_impresion, NULL))
 	{
-		pthread_mutex_destroy(&simulacion->cerrojo);
-		free(simulacion->cola);
-		free(simulacion->programadores);
-		free(simulacion->llaves);
-		return (0);
+		return (pthread_mutex_destroy(&simulacion->cerrojo),
+			free(simulacion->cola), free(simulacion->programadores),
+			free(simulacion->llaves), 0);
 	}
 	if (pthread_cond_init(&simulacion->cambio, NULL))
 	{
-		pthread_mutex_destroy(&simulacion->cerrojo_impresion);
-		pthread_mutex_destroy(&simulacion->cerrojo);
-		free(simulacion->cola);
-		free(simulacion->programadores);
-		free(simulacion->llaves);
-		return (0);
+		return (pthread_mutex_destroy(&simulacion->cerrojo_impresion),
+			pthread_mutex_destroy(&simulacion->cerrojo), free(simulacion->cola),
+			free(simulacion->programadores), free(simulacion->llaves), 0);
 	}
 	inicializar_programadores(simulacion);
 	return (1);
