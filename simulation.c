@@ -12,6 +12,7 @@
 
 #include "codexion.h"
 #include <stdlib.h>
+#include <string.h>
 
 static int	asignar(t_simulacion *simulacion, t_configuracion *configuracion)
 {
@@ -50,7 +51,7 @@ static void	inicializar_programadores(t_simulacion *simulacion)
 int	inicializar_simulacion(t_simulacion *simulacion,
 		t_configuracion *configuracion)
 {
-	*simulacion = (t_simulacion){0};
+	memset(simulacion, 0, sizeof(*simulacion));
 	simulacion->configuracion = *configuracion;
 	simulacion->inicio = tiempo_ms();
 	if (!asignar(simulacion, configuracion))
