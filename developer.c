@@ -48,6 +48,14 @@ static int	dormir_o_detener(t_simulacion *simulacion, long milisegundos)
 
 static int	compilar(t_programador *programador)
 {
+	if (programador->simulacion->configuracion.programadores == 1)
+	{
+		registrar_estado(programador, "ha tomado una llave");
+		while (!esta_detenida(programador->simulacion))
+			dormir_o_detener(programador->simulacion,
+				programador->simulacion->configuracion.agotamiento);
+		return (0);
+	}
 	if (!tomar_llaves(programador))
 		return (0);
 	pthread_mutex_lock(&programador->simulacion->cerrojo);
