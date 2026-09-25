@@ -62,14 +62,14 @@ Events are printed as `timestamp_in_ms coder_id state`. The program reports dong
 Requests are stored in a priority heap:
 
 - With `fifo`, the earliest request wins.
-- With `edf`, the coder with the closest deadline wins: `last_compile_start + time_to_burnout`. Arrival order breaks ties.
+- With `edf`, the coder with the closest deadline wins: `last_compile_start + time_to_burnout`. The lower coder ID breaks ties.
 
 The scheduler selects the highest-priority request that can acquire both dongles at once. Therefore, a request blocked by a neighbouring dongle does not prevent another compatible request from being granted.
 
 ## Blocking cases handled
 
 - **Deadlock:** no thread acquires one dongle and waits for the other. The scheduler grants both dongles as one protected logical operation, removing circular wait and the Coffman *hold and wait* condition.
-- **Starvation:** pending requests are ordered in a heap according to the chosen policy. FIFO preserves arrival order; EDF deterministically serves the most urgent deadline and uses the request order as a tie-breaker.
+- **Starvation:** pending requests are ordered in a heap according to the chosen policy. FIFO preserves arrival order; EDF deterministically serves the most urgent deadline and uses the lower coder ID as a tie-breaker.
 - **Resource contention:** all dongle, queue, and grant state changes occur while holding the same mutex. A request is granted only when both adjacent dongles are available.
 - **Cooldown:** releasing a dongle records its `lista_en` availability time. The scheduler cannot allocate it before that time, and timed waits let pending coders retry when a cooldown expires.
 - **Burnout:** a dedicated monitor thread checks deadlines and stops the simulation when one is exceeded. It wakes waiting threads so they can exit cleanly.

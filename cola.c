@@ -24,7 +24,7 @@ int	va_antes(t_simulacion *simulacion, t_programador *primero,
 		+ simulacion->configuracion.agotamiento;
 	if (simulacion->configuracion.edf)
 		return (primer_limite < segundo_limite || (primer_limite
-				== segundo_limite && primero->turno < segundo->turno));
+				== segundo_limite && primero->id < segundo->id));
 	return (primero->turno < segundo->turno);
 }
 
