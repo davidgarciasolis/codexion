@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "codexion.h"
+#include <stdio.h>
 
 static int	iniciar_programadores(t_simulacion *simulacion)
 {
@@ -31,22 +32,38 @@ static int	iniciar_programadores(t_simulacion *simulacion)
 	return (indice);
 }
 
+static int	iniciar_monitor(t_simulacion *simulacion, pthread_t *monitor)
+{
+	if (pthread_create(monitor, NULL, rutina_monitor, simulacion))
+	{
+		printf("Error: no se pudo crear el hilo monitor.\n");
+		detener_simulacion(simulacion);
+		return (0);
+	}
+	return (1);
+}
+
 int	main(int argc, char **argv)
 {
 	t_configuracion	configuracion;
 	t_simulacion	simulacion;
 	pthread_t		monitor;
 	int				indice;
+	int				monitor_creado;
 
 	if (!parsear(argc, argv, &configuracion)
 		|| !inicializar_simulacion(&simulacion, &configuracion))
 		return (1);
 	indice = iniciar_programadores(&simulacion);
-	pthread_create(&monitor, NULL, rutina_monitor, &simulacion);
-	while (indice-- > 0)
+	monitor_creado = iniciar_monitor(&simulacion, &monitor);
+	while (indice > 0)
+	{
+		indice--;
 		pthread_join(simulacion.programadores[indice].hilo, NULL);
+	}
 	detener_simulacion(&simulacion);
-	pthread_join(monitor, NULL);
+	if (monitor_creado)
+		pthread_join(monitor, NULL);
 	destruir_simulacion(&simulacion);
-	return (0);
+	return (!monitor_creado);
 }
