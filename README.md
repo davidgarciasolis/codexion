@@ -10,7 +10,7 @@ The project uses POSIX threads, mutexes, condition variables, and a priority que
 
 Each coder runs in its own thread. After refactoring, it requests its left and right dongles before starting another compilation. A released dongle remains unavailable for the configured cooldown period.
 
-A dedicated monitor thread periodically checks every coder's deadline. The simulation ends when a coder burns out because it did not start compiling in time, or when every coder has completed the required number of compilations.
+A dedicated monitor thread periodically checks every coder's deadline. A coder stops after completing its required number of compilations, so its final event is the start of that compilation. The simulation ends when a coder burns out because it did not start compiling in time, or when every coder has completed the required number of compilations.
 
 ## Instructions
 
@@ -55,7 +55,7 @@ Example:
 ./codexion 4 800 200 200 200 3 50 fifo
 ```
 
-Events are printed as `timestamp_in_ms coder_id state`. The program reports dongle acquisition, compilation, debugging, refactoring, burnout, and simulation completion.
+Events are printed as `timestamp_in_ms coder_id state`. The program reports dongle acquisition, compilation, debugging, refactoring, and burnout.
 
 ## Scheduling
 
@@ -73,7 +73,7 @@ The scheduler selects the highest-priority request that can acquire both dongles
 - **Resource contention:** all dongle, queue, and grant state changes occur while holding the same mutex. A request is granted only when both adjacent dongles are available.
 - **Cooldown:** releasing a dongle records its `lista_en` availability time. The scheduler cannot allocate it before that time, and timed waits let pending coders retry when a cooldown expires.
 - **Burnout:** a dedicated monitor thread checks deadlines and stops the simulation when one is exceeded. It wakes waiting threads so they can exit cleanly.
-- **Interleaved output:** a dedicated output mutex serializes every log line, including burnout and completion messages.
+- **Interleaved output:** a dedicated output mutex serializes every log line, including burnout messages.
 - **Coordinated completion:** when all coders reach the compilation target, shared state is marked as stopped and all waiting threads are notified.
 
 ## Thread synchronization mechanisms

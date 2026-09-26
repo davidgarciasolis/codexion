@@ -37,10 +37,3 @@ void	registrar_agotamiento(t_programador *programador)
 		tiempo_ms() - simulacion->inicio, programador->id);
 	pthread_mutex_unlock(&simulacion->cerrojo_impresion);
 }
-
-void	registrar_finalizacion(t_simulacion *simulacion)
-{
-	pthread_mutex_lock(&simulacion->cerrojo_impresion);
-	printf("%ld simulación completada\n", tiempo_ms() - simulacion->inicio);
-	pthread_mutex_unlock(&simulacion->cerrojo_impresion);
-}
