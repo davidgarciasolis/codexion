@@ -6,7 +6,7 @@
 /*   By: davgarc4 <davgarc4@student.42madrid.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/18 17:32:01 by davgarc4          #+#    #+#             */
-/*   Updated: 2026/09/18 17:40:41 by davgarc4         ###   ########.fr       */
+/*   Updated: 2026/09/26 16:43:12 by davgarc4         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,9 +67,9 @@ long	tiempo_ms(void);
 int		parsear(int argc, char **argv, t_configuracion *configuracion);
 int		inicializar_simulacion(t_simulacion *simulacion,
 			t_configuracion *configuracion);
-int	liberar_asignaciones(t_simulacion *simulacion);
-int	limpiar_cerrojo(t_simulacion *simulacion);
-int	limpiar_cerrojo_impresion(t_simulacion *simulacion);
+int		liberar_asignaciones(t_simulacion *simulacion);
+int		limpiar_cerrojo(t_simulacion *simulacion);
+int		limpiar_cerrojo_impresion(t_simulacion *simulacion);
 void	destruir_simulacion(t_simulacion *simulacion);
 void	*rutina_programador(void *argumento);
 void	*rutina_monitor(void *argumento);
