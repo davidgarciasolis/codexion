@@ -24,10 +24,7 @@ static int	asignar(t_simulacion *simulacion, t_configuracion *configuracion)
 			sizeof(*simulacion->cola));
 	if (!simulacion->llaves || !simulacion->programadores || !simulacion->cola)
 	{
-		free(simulacion->llaves);
-		free(simulacion->programadores);
-		free(simulacion->cola);
-		return (0);
+		return (liberar_asignaciones(simulacion));
 	}
 	return (1);
 }
@@ -57,20 +54,11 @@ int	inicializar_simulacion(t_simulacion *simulacion,
 	if (!asignar(simulacion, configuracion))
 		return (0);
 	if (pthread_mutex_init(&simulacion->cerrojo, NULL))
-		return (free(simulacion->cola), free(simulacion->programadores),
-			free(simulacion->llaves), 0);
+		return (liberar_asignaciones(simulacion));
 	if (pthread_mutex_init(&simulacion->cerrojo_impresion, NULL))
-	{
-		return (pthread_mutex_destroy(&simulacion->cerrojo),
-			free(simulacion->cola), free(simulacion->programadores),
-			free(simulacion->llaves), 0);
-	}
+		return (limpiar_cerrojo(simulacion));
 	if (pthread_cond_init(&simulacion->cambio, NULL))
-	{
-		return (pthread_mutex_destroy(&simulacion->cerrojo_impresion),
-			pthread_mutex_destroy(&simulacion->cerrojo), free(simulacion->cola),
-			free(simulacion->programadores), free(simulacion->llaves), 0);
-	}
+		return (limpiar_cerrojo_impresion(simulacion));
 	inicializar_programadores(simulacion);
 	return (1);
 }
