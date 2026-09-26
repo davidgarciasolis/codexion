@@ -6,7 +6,7 @@
 /*   By: davgarc4 <davgarc4@student.42madrid.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/18 17:34:01 by davgarc4          #+#    #+#             */
-/*   Updated: 2026/09/20 16:54:11 by davgarc4         ###   ########.fr       */
+/*   Updated: 2026/09/26 13:26:55 by davgarc4         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,7 +51,7 @@ static void	inicializar_programadores(t_simulacion *simulacion)
 int	inicializar_simulacion(t_simulacion *simulacion,
 		t_configuracion *configuracion)
 {
-	memset(simulacion, 0, sizeof(*simulacion));
+	*simulacion = (t_simulacion){0};
 	simulacion->configuracion = *configuracion;
 	simulacion->inicio = tiempo_ms();
 	if (!asignar(simulacion, configuracion))
