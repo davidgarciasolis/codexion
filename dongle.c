@@ -6,7 +6,7 @@
 /*   By: davgarc4 <davgarc4@student.42madrid.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/18 17:32:21 by davgarc4          #+#    #+#             */
-/*   Updated: 2026/09/18 18:02:03 by davgarc4         ###   ########.fr       */
+/*   Updated: 2026/09/27 13:01:00 by davgarc4         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,8 +42,8 @@ int	puede_tomar(t_programador *programador, long ahora)
 	if (!simulacion->llaves[izquierda].libre
 		|| simulacion->llaves[izquierda].lista_en > ahora)
 		return (0);
-	if (izquierda != derecha && (!simulacion->llaves[derecha].libre
-			|| simulacion->llaves[derecha].lista_en > ahora))
+	if (!simulacion->llaves[derecha].libre
+		|| simulacion->llaves[derecha].lista_en > ahora)
 		return (0);
 	return (1);
 }
