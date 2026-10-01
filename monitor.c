@@ -20,7 +20,9 @@ static t_programador	*buscar_agotado(t_simulacion *simulacion)
 	indice = 0;
 	while (indice < simulacion->configuracion.programadores)
 	{
-		if (tiempo_ms() > simulacion->programadores[indice].ultima_compilacion
+		if (simulacion->programadores[indice].compilaciones
+			< simulacion->configuracion.requeridos
+			&& tiempo_ms() > simulacion->programadores[indice].ultima_compilacion
 			+ simulacion->configuracion.agotamiento)
 		{
 			simulacion->detenida = 1;

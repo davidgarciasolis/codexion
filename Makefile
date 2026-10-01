@@ -1,7 +1,7 @@
 NAME = codexion
 
 CC = cc
-CFLAGS = -Wall -Wextra -Werror -pthread
+CFLAGS = -Wall -Wextra -Werror -pthread -Icoders
 
 SRCS = main.c parseo.c simulation.c cleanup.c time.c estado.c log.c monitor.c \
 	cola.c dongle.c planificador.c developer.c
@@ -12,7 +12,7 @@ all: $(NAME)
 $(NAME): $(OBJS)
 	$(CC) $(CFLAGS) $(OBJS) -o $(NAME)
 
-%.o: %.c codexion.h
+%.o: %.c coders/codexion.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:

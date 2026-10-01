@@ -14,18 +14,26 @@
 #include <stdlib.h>
 #include <string.h>
 
+static void	*ft_calloc(size_t tamano)
+{
+	void	*memoria;
+
+	memoria = malloc(tamano);
+	if (memoria)
+		memset(memoria, 0, tamano);
+	return (memoria);
+}
+
 static int	asignar(t_simulacion *simulacion, t_configuracion *configuracion)
 {
-	simulacion->llaves = calloc(configuracion->programadores,
-			sizeof(*simulacion->llaves));
-	simulacion->programadores = calloc(configuracion->programadores,
-			sizeof(*simulacion->programadores));
-	simulacion->cola = calloc(configuracion->programadores,
-			sizeof(*simulacion->cola));
+	simulacion->llaves = ft_calloc(configuracion->programadores
+			* sizeof(*simulacion->llaves));
+	simulacion->programadores = ft_calloc(configuracion->programadores
+			* sizeof(*simulacion->programadores));
+	simulacion->cola = ft_calloc(configuracion->programadores
+			* sizeof(*simulacion->cola));
 	if (!simulacion->llaves || !simulacion->programadores || !simulacion->cola)
-	{
 		return (liberar_asignaciones(simulacion));
-	}
 	return (1);
 }
 
