@@ -6,7 +6,7 @@
 /*   By: davgarc4 <davgarc4@student.42madrid.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/18 17:32:31 by davgarc4          #+#    #+#             */
-/*   Updated: 2026/09/18 18:02:42 by davgarc4         ###   ########.fr       */
+/*   Updated: 2026/10/03 15:05:06 by davgarc4         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,8 +52,9 @@ int	main(int argc, char **argv)
 	int				index;
 	int				monitor_created;
 
-	if (!parse_args(argc, argv, &config)
-		|| !init_simulation(&simulation, &config))
+	if (!parse_args(argc, argv, &config))
+		return (1);
+	if (!init_simulation(&simulation, &config))
 		return (1);
 	index = start_coders(&simulation);
 	monitor_created = 0;
