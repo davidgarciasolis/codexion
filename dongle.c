@@ -62,11 +62,11 @@ static void	wait_for_turn(t_coder *coder)
 		{
 			deadline.tv_sec = next / 1000;
 			deadline.tv_nsec = (next % 1000) * 1000000L;
-			pthread_cond_timedwait(&simulation->changed, &simulation->lock,
+			pthread_cond_timedwait(&coder->ready, &simulation->lock,
 				&deadline);
 		}
 		else
-			pthread_cond_wait(&simulation->changed, &simulation->lock);
+			pthread_cond_wait(&coder->ready, &simulation->lock);
 		grant_waiting(simulation);
 	}
 }
@@ -104,6 +104,6 @@ void	release_dongles(t_coder *coder)
 	simulation->dongles[right].available = 1;
 	simulation->dongles[right].ready_at = ready_at;
 	grant_waiting(simulation);
-	pthread_cond_broadcast(&simulation->changed);
+	wake_neighbors(coder);
 	pthread_mutex_unlock(&simulation->lock);
 }

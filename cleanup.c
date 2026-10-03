@@ -40,8 +40,18 @@ int	cleanup_print_lock(t_simulation *simulation)
 	return (0);
 }
 
+int	cleanup_conditions(t_simulation *simulation, int count)
+{
+	while (count > 0)
+	{
+		count--;
+		pthread_cond_destroy(&simulation->coders[count].ready);
+	}
+	pthread_cond_destroy(&simulation->changed);
+	return (cleanup_print_lock(simulation));
+}
+
 void	destroy_simulation(t_simulation *simulation)
 {
-	pthread_cond_destroy(&simulation->changed);
-	cleanup_print_lock(simulation);
+	cleanup_conditions(simulation, simulation->config.coders);
 }

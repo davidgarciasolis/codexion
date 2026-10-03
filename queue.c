@@ -24,7 +24,7 @@ int	has_priority(t_simulation *simulation, t_coder *first,
 			+ simulation->config.time_to_burnout;
 		second_deadline = second->last_compile_start
 			+ simulation->config.time_to_burnout;
-		if  (first_deadline == second_deadline)
+		if (first_deadline == second_deadline)
 			return (first->id < second->id);
 		return (first_deadline < second_deadline);
 	}

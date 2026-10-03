@@ -60,6 +60,7 @@ struct s_coder
 	long			last_compile_start;
 	long			turn;
 	pthread_t		thread;
+	pthread_cond_t	ready;
 	t_simulation	*simulation;
 };
 
@@ -70,12 +71,15 @@ int		init_simulation(t_simulation *simulation,
 int		free_allocations(t_simulation *simulation);
 int		cleanup_lock(t_simulation *simulation);
 int		cleanup_print_lock(t_simulation *simulation);
+int		cleanup_conditions(t_simulation *simulation, int count);
 void	destroy_simulation(t_simulation *simulation);
 void	*coder_routine(void *argument);
 void	*monitor_routine(void *argument);
 void	log_state(t_coder *coder, char *state);
 void	log_burnout(t_coder *coder);
 void	stop_simulation(t_simulation *simulation);
+void	wake_coders(t_simulation *simulation);
+void	wake_neighbors(t_coder *coder);
 void	queue_insert(t_simulation *simulation, t_coder *coder);
 void	queue_remove(t_simulation *simulation, int index);
 void	grant_waiting(t_simulation *simulation);

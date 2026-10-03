@@ -84,7 +84,7 @@ static int	complete_compile(t_coder *coder)
 	if (simulation->finished == simulation->config.coders)
 	{
 		simulation->stopped = 1;
-		pthread_cond_broadcast(&simulation->changed);
+		wake_coders(simulation);
 	}
 	keep_running = !simulation->stopped
 		&& coder->compiles < simulation->config.compiles_required;

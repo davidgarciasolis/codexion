@@ -26,7 +26,7 @@ static t_coder	*find_burned_out(t_simulation *simulation)
 			+ simulation->config.time_to_burnout)
 		{
 			simulation->stopped = 1;
-			pthread_cond_broadcast(&simulation->changed);
+			wake_coders(simulation);
 			return (&simulation->coders[index]);
 		}
 		index++;

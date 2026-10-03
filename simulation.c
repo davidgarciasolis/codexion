@@ -37,13 +37,15 @@ static int	allocate(t_simulation *simulation, t_config *config)
 	return (1);
 }
 
-static void	init_coders(t_simulation *simulation)
+static int	init_coders(t_simulation *simulation)
 {
 	int	index;
 
 	index = 0;
 	while (index < simulation->config.coders)
 	{
+		if (pthread_cond_init(&simulation->coders[index].ready, NULL))
+			return (cleanup_conditions(simulation, index));
 		simulation->dongles[index].available = 1;
 		simulation->coders[index].id = index + 1;
 		simulation->coders[index].last_compile_start
@@ -51,6 +53,7 @@ static void	init_coders(t_simulation *simulation)
 		simulation->coders[index].simulation = simulation;
 		index++;
 	}
+	return (1);
 }
 
 int	init_simulation(t_simulation *simulation,
@@ -67,6 +70,5 @@ int	init_simulation(t_simulation *simulation,
 		return (cleanup_lock(simulation));
 	if (pthread_cond_init(&simulation->changed, NULL))
 		return (cleanup_print_lock(simulation));
-	init_coders(simulation);
-	return (1);
+	return (init_coders(simulation));
 }

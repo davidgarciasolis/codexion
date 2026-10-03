@@ -24,8 +24,8 @@ static void	grant(t_simulation *simulation, int index)
 	simulation->dongles[right].available = 0;
 	simulation->queue[index]->waiting = 0;
 	simulation->queue[index]->granted = 1;
+	pthread_cond_signal(&simulation->queue[index]->ready);
 	queue_remove(simulation, index);
-	pthread_cond_broadcast(&simulation->changed);
 }
 
 static int	best_available(t_simulation *simulation, long now)

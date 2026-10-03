@@ -78,15 +78,17 @@ The scheduler selects the highest-priority request that can take both dongles at
 
 ## Thread synchronization mechanisms
 
-The simulation uses two mutexes and one POSIX condition variable:
+The simulation uses two mutexes, one shared condition variable for shutdown,
+and one condition variable per coder:
 
 | Mechanism | Purpose |
 | --- | --- |
 | `pthread_mutex_t lock` | Protects dongles, the waiting heap, turns, deadlines, counters, and the global stop flag. |
 | `pthread_mutex_t print_lock` | Ensures that one complete log line is printed before another thread writes. |
-| `pthread_cond_t changed` | Wakes coders when resource availability changes, a cooldown expires, or the simulation stops. |
+| `pthread_cond_t changed` | Interrupts compilation, debugging, and refactoring waits when the simulation stops. |
+| `pthread_cond_t ready` (per coder) | Wakes a coder when its request is granted, a neighbour releases its dongles, or the simulation stops. Timed waits also expire at the later cooldown of its two dongles. |
 
-When requesting dongles, a coder locks `lock`, enters the heap, and waits on `changed` until it receives a grant. Waiting releases the mutex atomically and takes it again before checking the predicate again. As a result, queue and dongle state are never read or updated without protection. Releases, grants, and shutdown use `broadcast` so affected requests can reevaluate their state.
+When requesting dongles, a coder locks `lock`, enters the heap, and waits on its own `ready` condition until it receives a grant. Waiting releases the mutex atomically and takes it again before checking the predicate again. As a result, queue and dongle state are never read or updated without protection. A grant signals only its recipient. A release signals waiting neighbours so they can recalculate their cooldown deadline. Shutdown signals every coder's condition and broadcasts on `changed` to interrupt activity waits. `wake_coders` must be called with `lock` held.
 
 The monitor also checks and updates the stop state while holding `lock`. Logging checks this state while locking mutexes in a consistent order (`print_lock`, then `lock`), preventing race conditions in output and messages after shutdown.
 
