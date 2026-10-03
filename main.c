@@ -13,31 +13,31 @@
 #include "codexion.h"
 #include <stdio.h>
 
-static int	iniciar_programadores(t_simulacion *simulacion)
+static int	start_coders(t_simulation *simulation)
 {
-	int	indice;
+	int	index;
 
-	indice = 0;
-	while (indice < simulacion->configuracion.programadores)
+	index = 0;
+	while (index < simulation->config.coders)
 	{
-		if (pthread_create(&simulacion->programadores[indice].hilo, NULL,
-				rutina_programador,
-				&simulacion->programadores[indice]))
+		if (pthread_create(&simulation->coders[index].thread, NULL,
+				coder_routine,
+				&simulation->coders[index]))
 		{
-			detener_simulacion(simulacion);
+			stop_simulation(simulation);
 			break ;
 		}
-		indice++;
+		index++;
 	}
-	return (indice);
+	return (index);
 }
 
-static int	iniciar_monitor(t_simulacion *simulacion, pthread_t *monitor)
+static int	start_monitor(t_simulation *simulation, pthread_t *monitor)
 {
-	if (pthread_create(monitor, NULL, rutina_monitor, simulacion))
+	if (pthread_create(monitor, NULL, monitor_routine, simulation))
 	{
-		printf("Error: no se pudo crear el hilo monitor.\n");
-		detener_simulacion(simulacion);
+		printf("Error: could not create the monitor thread.\n");
+		stop_simulation(simulation);
 		return (0);
 	}
 	return (1);
@@ -45,25 +45,25 @@ static int	iniciar_monitor(t_simulacion *simulacion, pthread_t *monitor)
 
 int	main(int argc, char **argv)
 {
-	t_configuracion	configuracion;
-	t_simulacion	simulacion;
+	t_config		config;
+	t_simulation	simulation;
 	pthread_t		monitor;
-	int				indice;
-	int				monitor_creado;
+	int				index;
+	int				monitor_created;
 
-	if (!parsear(argc, argv, &configuracion)
-		|| !inicializar_simulacion(&simulacion, &configuracion))
+	if (!parse_args(argc, argv, &config)
+		|| !init_simulation(&simulation, &config))
 		return (1);
-	indice = iniciar_programadores(&simulacion);
-	monitor_creado = iniciar_monitor(&simulacion, &monitor);
-	while (indice > 0)
+	index = start_coders(&simulation);
+	monitor_created = start_monitor(&simulation, &monitor);
+	while (index > 0)
 	{
-		indice--;
-		pthread_join(simulacion.programadores[indice].hilo, NULL);
+		index--;
+		pthread_join(simulation.coders[index].thread, NULL);
 	}
-	detener_simulacion(&simulacion);
-	if (monitor_creado)
+	stop_simulation(&simulation);
+	if (monitor_created)
 		pthread_join(monitor, NULL);
-	destruir_simulacion(&simulacion);
-	return (!monitor_creado);
+	destroy_simulation(&simulation);
+	return (!monitor_created);
 }

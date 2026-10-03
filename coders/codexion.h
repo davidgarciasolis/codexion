@@ -15,75 +15,75 @@
 
 # include <pthread.h>
 
-typedef struct s_configuracion
+typedef struct s_config
 {
-	int		programadores;
-	long	agotamiento;
-	long	compilar;
-	long	depurar;
-	long	refactorizar;
-	int		requeridos;
-	long	enfriamiento;
+	int		coders;
+	long	time_to_burnout;
+	long	time_to_compile;
+	long	time_to_debug;
+	long	time_to_refactor;
+	int		compiles_required;
+	long	dongle_cooldown;
 	int		edf;
-}	t_configuracion;
+}	t_config;
 
-typedef struct s_llave
+typedef struct s_dongle
 {
-	int		libre;
-	long	lista_en;
-}	t_llave;
+	int		available;
+	long	ready_at;
+}	t_dongle;
 
-typedef struct s_programador	t_programador;
+typedef struct s_coder	t_coder;
 
-typedef struct s_simulacion
+typedef struct s_simulation
 {
-	t_configuracion		configuracion;
-	t_llave				*llaves;
-	t_programador		*programadores;
-	t_programador		**cola;
-	int					tamano_cola;
-	long				siguiente_turno;
-	long				inicio;
-	int					detenida;
-	int					terminados;
-	pthread_mutex_t		cerrojo;
-	pthread_mutex_t		cerrojo_impresion;
-	pthread_cond_t		cambio;
-}	t_simulacion;
+	t_config		config;
+	t_dongle		*dongles;
+	t_coder			*coders;
+	t_coder			**queue;
+	int				queue_size;
+	long			next_turn;
+	long			start_time;
+	int				stopped;
+	int				finished;
+	pthread_mutex_t	lock;
+	pthread_mutex_t	print_lock;
+	pthread_cond_t	changed;
+}	t_simulation;
 
-struct s_programador
+struct s_coder
 {
 	int				id;
-	int				compilaciones;
-	int				esperando;
-	int				concedido;
-	long			ultima_compilacion;
-	long			turno;
-	pthread_t		hilo;
-	t_simulacion	*simulacion;
+	int				compiles;
+	int				waiting;
+	int				granted;
+	long			last_compile_start;
+	long			turn;
+	pthread_t		thread;
+	t_simulation	*simulation;
 };
 
-long	tiempo_ms(void);
-int		parsear(int argc, char **argv, t_configuracion *configuracion);
-int		inicializar_simulacion(t_simulacion *simulacion,
-			t_configuracion *configuracion);
-int		liberar_asignaciones(t_simulacion *simulacion);
-int		limpiar_cerrojo(t_simulacion *simulacion);
-int		limpiar_cerrojo_impresion(t_simulacion *simulacion);
-void	destruir_simulacion(t_simulacion *simulacion);
-void	*rutina_programador(void *argumento);
-void	*rutina_monitor(void *argumento);
-void	registrar_estado(t_programador *programador, char *estado);
-void	registrar_agotamiento(t_programador *programador);
-void	detener_simulacion(t_simulacion *simulacion);
-void	cola_insertar(t_simulacion *simulacion, t_programador *programador);
-void	cola_eliminar(t_simulacion *simulacion, int indice);
-void	conceder_esperando(t_simulacion *simulacion);
-int		puede_tomar(t_programador *programador, long ahora);
-int		va_antes(t_simulacion *simulacion, t_programador *primero,
-			t_programador *segundo);
-int		tomar_llaves(t_programador *programador);
-void	liberar_llaves(t_programador *programador);
-int		esta_detenida(t_simulacion *simulacion);
+long	time_ms(void);
+int		parse_args(int argc, char **argv, t_config *config);
+int		init_simulation(t_simulation *simulation,
+			t_config *config);
+int		free_allocations(t_simulation *simulation);
+int		cleanup_lock(t_simulation *simulation);
+int		cleanup_print_lock(t_simulation *simulation);
+void	destroy_simulation(t_simulation *simulation);
+void	*coder_routine(void *argument);
+void	*monitor_routine(void *argument);
+void	log_state(t_coder *coder, char *state);
+void	log_burnout(t_coder *coder);
+void	stop_simulation(t_simulation *simulation);
+void	queue_insert(t_simulation *simulation, t_coder *coder);
+void	queue_remove(t_simulation *simulation, int index);
+void	grant_waiting(t_simulation *simulation);
+int		can_take(t_coder *coder, long now);
+int		has_priority(t_simulation *simulation, t_coder *first,
+			t_coder *second);
+int		take_dongles(t_coder *coder);
+void	release_dongles(t_coder *coder);
+int		is_stopped(t_simulation *simulation);
 
 #endif

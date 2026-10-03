@@ -14,100 +14,100 @@
 #include <errno.h>
 #include <sys/time.h>
 
-static void	limite_desde_ahora(struct timespec *limite, long milisegundos)
+static void	deadline_from_now(struct timespec *deadline, long milliseconds)
 {
-	struct timeval	ahora;
+	struct timeval	now;
 
-	gettimeofday(&ahora, NULL);
-	limite->tv_sec = ahora.tv_sec + milisegundos / 1000;
-	limite->tv_nsec = ahora.tv_usec * 1000
-		+ (milisegundos % 1000) * 1000000L;
-	if (limite->tv_nsec >= 1000000000L)
+	gettimeofday(&now, NULL);
+	deadline->tv_sec = now.tv_sec + milliseconds / 1000;
+	deadline->tv_nsec = now.tv_usec * 1000
+		+ (milliseconds % 1000) * 1000000L;
+	if (deadline->tv_nsec >= 1000000000L)
 	{
-		limite->tv_sec++;
-		limite->tv_nsec -= 1000000000L;
+		deadline->tv_sec++;
+		deadline->tv_nsec -= 1000000000L;
 	}
 }
 
-static int	dormir_o_detener(t_simulacion *simulacion, long milisegundos)
+static int	sleep_or_stop(t_simulation *simulation, long milliseconds)
 {
-	struct timespec	limite;
-	int				resultado;
-	int				activa;
+	struct timespec	deadline;
+	int				result;
+	int				active;
 
-	limite_desde_ahora(&limite, milisegundos);
-	pthread_mutex_lock(&simulacion->cerrojo);
-	resultado = 0;
-	while (!simulacion->detenida && resultado != ETIMEDOUT)
-		resultado = pthread_cond_timedwait(&simulacion->cambio,
-				&simulacion->cerrojo, &limite);
-	activa = !simulacion->detenida;
-	pthread_mutex_unlock(&simulacion->cerrojo);
-	return (activa);
+	deadline_from_now(&deadline, milliseconds);
+	pthread_mutex_lock(&simulation->lock);
+	result = 0;
+	while (!simulation->stopped && result != ETIMEDOUT)
+		result = pthread_cond_timedwait(&simulation->changed,
+				&simulation->lock, &deadline);
+	active = !simulation->stopped;
+	pthread_mutex_unlock(&simulation->lock);
+	return (active);
 }
 
-static int	compilar(t_programador *programador)
+static int	compile(t_coder *coder)
 {
-	if (programador->simulacion->configuracion.programadores == 1)
+	if (coder->simulation->config.coders == 1)
 	{
-		registrar_estado(programador, "ha tomado una llave");
-		while (!esta_detenida(programador->simulacion))
-			dormir_o_detener(programador->simulacion,
-				programador->simulacion->configuracion.agotamiento);
+		log_state(coder, "has taken a dongle");
+		while (!is_stopped(coder->simulation))
+			sleep_or_stop(coder->simulation,
+				coder->simulation->config.time_to_burnout);
 		return (0);
 	}
-	if (!tomar_llaves(programador))
+	if (!take_dongles(coder))
 		return (0);
-	pthread_mutex_lock(&programador->simulacion->cerrojo);
-	programador->ultima_compilacion = tiempo_ms();
-	pthread_mutex_unlock(&programador->simulacion->cerrojo);
-	registrar_estado(programador, "ha tomado una llave");
-	if (programador->simulacion->configuracion.programadores > 1)
-		registrar_estado(programador, "ha tomado una llave");
-	registrar_estado(programador, "está compilando");
-	dormir_o_detener(programador->simulacion,
-		programador->simulacion->configuracion.compilar);
-	liberar_llaves(programador);
-	return (!esta_detenida(programador->simulacion));
+	pthread_mutex_lock(&coder->simulation->lock);
+	coder->last_compile_start = time_ms();
+	pthread_mutex_unlock(&coder->simulation->lock);
+	log_state(coder, "has taken a dongle");
+	if (coder->simulation->config.coders > 1)
+		log_state(coder, "has taken a dongle");
+	log_state(coder, "is compiling");
+	sleep_or_stop(coder->simulation,
+		coder->simulation->config.time_to_compile);
+	release_dongles(coder);
+	return (!is_stopped(coder->simulation));
 }
 
-static int	completado(t_programador *programador)
+static int	complete_compile(t_coder *coder)
 {
-	t_simulacion	*simulacion;
-	int				continuar;
+	t_simulation	*simulation;
+	int				keep_running;
 
-	simulacion = programador->simulacion;
-	pthread_mutex_lock(&simulacion->cerrojo);
-	programador->compilaciones++;
-	if (programador->compilaciones == simulacion->configuracion.requeridos)
-		simulacion->terminados++;
-	if (simulacion->terminados == simulacion->configuracion.programadores)
+	simulation = coder->simulation;
+	pthread_mutex_lock(&simulation->lock);
+	coder->compiles++;
+	if (coder->compiles == simulation->config.compiles_required)
+		simulation->finished++;
+	if (simulation->finished == simulation->config.coders)
 	{
-		simulacion->detenida = 1;
-		pthread_cond_broadcast(&simulacion->cambio);
+		simulation->stopped = 1;
+		pthread_cond_broadcast(&simulation->changed);
 	}
-	continuar = !simulacion->detenida
-		&& programador->compilaciones < simulacion->configuracion.requeridos;
-	pthread_mutex_unlock(&simulacion->cerrojo);
-	return (continuar);
+	keep_running = !simulation->stopped
+		&& coder->compiles < simulation->config.compiles_required;
+	pthread_mutex_unlock(&simulation->lock);
+	return (keep_running);
 }
 
-void	*rutina_programador(void *argumento)
+void	*coder_routine(void *argument)
 {
-	t_programador	*programador;
+	t_coder	*coder;
 
-	programador = argumento;
-	while (!esta_detenida(programador->simulacion))
+	coder = argument;
+	while (!is_stopped(coder->simulation))
 	{
-		if (!compilar(programador) || !completado(programador))
+		if (!compile(coder) || !complete_compile(coder))
 			break ;
-		registrar_estado(programador, "está depurando");
-		if (!dormir_o_detener(programador->simulacion,
-				programador->simulacion->configuracion.depurar))
+		log_state(coder, "is debugging");
+		if (!sleep_or_stop(coder->simulation,
+				coder->simulation->config.time_to_debug))
 			break ;
-		registrar_estado(programador, "está refactorizando");
-		if (!dormir_o_detener(programador->simulacion,
-				programador->simulacion->configuracion.refactorizar))
+		log_state(coder, "is refactoring");
+		if (!sleep_or_stop(coder->simulation,
+				coder->simulation->config.time_to_refactor))
 			break ;
 	}
 	return (NULL);

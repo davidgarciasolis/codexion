@@ -13,41 +13,41 @@
 #include "codexion.h"
 #include <unistd.h>
 
-static t_programador	*buscar_agotado(t_simulacion *simulacion)
+static t_coder	*find_burned_out(t_simulation *simulation)
 {
-	int	indice;
+	int	index;
 
-	indice = 0;
-	while (indice < simulacion->configuracion.programadores)
+	index = 0;
+	while (index < simulation->config.coders)
 	{
-		if (simulacion->programadores[indice].compilaciones
-			< simulacion->configuracion.requeridos
-			&& tiempo_ms() > simulacion->programadores[indice].ultima_compilacion
-			+ simulacion->configuracion.agotamiento)
+		if (simulation->coders[index].compiles
+			< simulation->config.compiles_required
+			&& time_ms() > simulation->coders[index].last_compile_start
+			+ simulation->config.time_to_burnout)
 		{
-			simulacion->detenida = 1;
-			pthread_cond_broadcast(&simulacion->cambio);
-			return (&simulacion->programadores[indice]);
+			simulation->stopped = 1;
+			pthread_cond_broadcast(&simulation->changed);
+			return (&simulation->coders[index]);
 		}
-		indice++;
+		index++;
 	}
 	return (NULL);
 }
 
-void	*rutina_monitor(void *argumento)
+void	*monitor_routine(void *argument)
 {
-	t_simulacion	*simulacion;
-	t_programador	*agotado;
+	t_simulation	*simulation;
+	t_coder			*burned_out;
 
-	simulacion = argumento;
-	while (!esta_detenida(simulacion))
+	simulation = argument;
+	while (!is_stopped(simulation))
 	{
-		pthread_mutex_lock(&simulacion->cerrojo);
-		agotado = buscar_agotado(simulacion);
-		pthread_mutex_unlock(&simulacion->cerrojo);
-		if (agotado)
+		pthread_mutex_lock(&simulation->lock);
+		burned_out = find_burned_out(simulation);
+		pthread_mutex_unlock(&simulation->lock);
+		if (burned_out)
 		{
-			registrar_agotamiento(agotado);
+			log_burnout(burned_out);
 			break ;
 		}
 		usleep(1000);

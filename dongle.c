@@ -13,97 +13,97 @@
 #include "codexion.h"
 #include <sys/time.h>
 
-static long	siguiente_enfriamiento(t_simulacion *simulacion, long ahora)
+static long	next_cooldown(t_simulation *simulation, long now)
 {
-	long	proximo;
-	int		indice;
+	long	next;
+	int		index;
 
-	proximo = 0;
-	indice = 0;
-	while (indice < simulacion->configuracion.programadores)
+	next = 0;
+	index = 0;
+	while (index < simulation->config.coders)
 	{
-		if (simulacion->llaves[indice].lista_en > ahora
-			&& (!proximo || simulacion->llaves[indice].lista_en < proximo))
-			proximo = simulacion->llaves[indice].lista_en;
-		indice++;
+		if (simulation->dongles[index].ready_at > now
+			&& (!next || simulation->dongles[index].ready_at < next))
+			next = simulation->dongles[index].ready_at;
+		index++;
 	}
-	return (proximo);
+	return (next);
 }
 
-int	puede_tomar(t_programador *programador, long ahora)
+int	can_take(t_coder *coder, long now)
 {
-	t_simulacion	*simulacion;
-	int				izquierda;
-	int				derecha;
+	t_simulation	*simulation;
+	int				left;
+	int				right;
 
-	simulacion = programador->simulacion;
-	izquierda = programador->id - 1;
-	derecha = programador->id % simulacion->configuracion.programadores;
-	if (!simulacion->llaves[izquierda].libre
-		|| simulacion->llaves[izquierda].lista_en > ahora)
+	simulation = coder->simulation;
+	left = coder->id - 1;
+	right = coder->id % simulation->config.coders;
+	if (!simulation->dongles[left].available
+		|| simulation->dongles[left].ready_at > now)
 		return (0);
-	if (!simulacion->llaves[derecha].libre
-		|| simulacion->llaves[derecha].lista_en > ahora)
+	if (!simulation->dongles[right].available
+		|| simulation->dongles[right].ready_at > now)
 		return (0);
 	return (1);
 }
 
-static void	esperar_turno(t_programador *programador)
+static void	wait_for_turn(t_coder *coder)
 {
-	t_simulacion	*simulacion;
-	struct timespec	limite;
-	long			proximo;
+	t_simulation	*simulation;
+	struct timespec	deadline;
+	long			next;
 
-	simulacion = programador->simulacion;
-	while (!programador->concedido && !simulacion->detenida)
+	simulation = coder->simulation;
+	while (!coder->granted && !simulation->stopped)
 	{
-		proximo = siguiente_enfriamiento(simulacion, tiempo_ms());
-		if (proximo)
+		next = next_cooldown(simulation, time_ms());
+		if (next)
 		{
-			limite.tv_sec = proximo / 1000;
-			limite.tv_nsec = (proximo % 1000) * 1000000L;
-			pthread_cond_timedwait(&simulacion->cambio, &simulacion->cerrojo,
-				&limite);
+			deadline.tv_sec = next / 1000;
+			deadline.tv_nsec = (next % 1000) * 1000000L;
+			pthread_cond_timedwait(&simulation->changed, &simulation->lock,
+				&deadline);
 		}
 		else
-			pthread_cond_wait(&simulacion->cambio, &simulacion->cerrojo);
-		conceder_esperando(simulacion);
+			pthread_cond_wait(&simulation->changed, &simulation->lock);
+		grant_waiting(simulation);
 	}
 }
 
-int	tomar_llaves(t_programador *programador)
+int	take_dongles(t_coder *coder)
 {
-	t_simulacion	*simulacion;
+	t_simulation	*simulation;
 
-	simulacion = programador->simulacion;
-	pthread_mutex_lock(&simulacion->cerrojo);
-	programador->turno = simulacion->siguiente_turno++;
-	programador->esperando = 1;
-	programador->concedido = 0;
-	cola_insertar(simulacion, programador);
-	conceder_esperando(simulacion);
-	esperar_turno(programador);
-	pthread_mutex_unlock(&simulacion->cerrojo);
-	return (programador->concedido);
+	simulation = coder->simulation;
+	pthread_mutex_lock(&simulation->lock);
+	coder->turn = simulation->next_turn++;
+	coder->waiting = 1;
+	coder->granted = 0;
+	queue_insert(simulation, coder);
+	grant_waiting(simulation);
+	wait_for_turn(coder);
+	pthread_mutex_unlock(&simulation->lock);
+	return (coder->granted);
 }
 
-void	liberar_llaves(t_programador *programador)
+void	release_dongles(t_coder *coder)
 {
-	t_simulacion	*simulacion;
-	int				izquierda;
-	int				derecha;
-	long			lista_en;
+	t_simulation	*simulation;
+	int				left;
+	int				right;
+	long			ready_at;
 
-	simulacion = programador->simulacion;
-	izquierda = programador->id - 1;
-	derecha = programador->id % simulacion->configuracion.programadores;
-	pthread_mutex_lock(&simulacion->cerrojo);
-	lista_en = tiempo_ms() + simulacion->configuracion.enfriamiento;
-	simulacion->llaves[izquierda].libre = 1;
-	simulacion->llaves[izquierda].lista_en = lista_en;
-	simulacion->llaves[derecha].libre = 1;
-	simulacion->llaves[derecha].lista_en = lista_en;
-	conceder_esperando(simulacion);
-	pthread_cond_broadcast(&simulacion->cambio);
-	pthread_mutex_unlock(&simulacion->cerrojo);
+	simulation = coder->simulation;
+	left = coder->id - 1;
+	right = coder->id % simulation->config.coders;
+	pthread_mutex_lock(&simulation->lock);
+	ready_at = time_ms() + simulation->config.dongle_cooldown;
+	simulation->dongles[left].available = 1;
+	simulation->dongles[left].ready_at = ready_at;
+	simulation->dongles[right].available = 1;
+	simulation->dongles[right].ready_at = ready_at;
+	grant_waiting(simulation);
+	pthread_cond_broadcast(&simulation->changed);
+	pthread_mutex_unlock(&simulation->lock);
 }

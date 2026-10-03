@@ -12,20 +12,20 @@
 
 #include "codexion.h"
 
-int	esta_detenida(t_simulacion *simulacion)
+int	is_stopped(t_simulation *simulation)
 {
-	int	detenida;
+	int	stopped;
 
-	pthread_mutex_lock(&simulacion->cerrojo);
-	detenida = simulacion->detenida;
-	pthread_mutex_unlock(&simulacion->cerrojo);
-	return (detenida);
+	pthread_mutex_lock(&simulation->lock);
+	stopped = simulation->stopped;
+	pthread_mutex_unlock(&simulation->lock);
+	return (stopped);
 }
 
-void	detener_simulacion(t_simulacion *simulacion)
+void	stop_simulation(t_simulation *simulation)
 {
-	pthread_mutex_lock(&simulacion->cerrojo);
-	simulacion->detenida = 1;
-	pthread_cond_broadcast(&simulacion->cambio);
-	pthread_mutex_unlock(&simulacion->cerrojo);
+	pthread_mutex_lock(&simulation->lock);
+	simulation->stopped = 1;
+	pthread_cond_broadcast(&simulation->changed);
+	pthread_mutex_unlock(&simulation->lock);
 }

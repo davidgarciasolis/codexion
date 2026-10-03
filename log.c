@@ -13,27 +13,27 @@
 #include "codexion.h"
 #include <stdio.h>
 
-void	registrar_estado(t_programador *programador, char *estado)
+void	log_state(t_coder *coder, char *state)
 {
-	t_simulacion	*simulacion;
+	t_simulation	*simulation;
 
-	simulacion = programador->simulacion;
-	pthread_mutex_lock(&simulacion->cerrojo_impresion);
-	pthread_mutex_lock(&simulacion->cerrojo);
-	if (!simulacion->detenida)
-		printf("%ld %d %s\n", tiempo_ms() - simulacion->inicio,
-			programador->id, estado);
-	pthread_mutex_unlock(&simulacion->cerrojo);
-	pthread_mutex_unlock(&simulacion->cerrojo_impresion);
+	simulation = coder->simulation;
+	pthread_mutex_lock(&simulation->print_lock);
+	pthread_mutex_lock(&simulation->lock);
+	if (!simulation->stopped)
+		printf("%ld %d %s\n", time_ms() - simulation->start_time,
+			coder->id, state);
+	pthread_mutex_unlock(&simulation->lock);
+	pthread_mutex_unlock(&simulation->print_lock);
 }
 
-void	registrar_agotamiento(t_programador *programador)
+void	log_burnout(t_coder *coder)
 {
-	t_simulacion	*simulacion;
+	t_simulation	*simulation;
 
-	simulacion = programador->simulacion;
-	pthread_mutex_lock(&simulacion->cerrojo_impresion);
-	printf("%ld %d se agotó\n",
-		tiempo_ms() - simulacion->inicio, programador->id);
-	pthread_mutex_unlock(&simulacion->cerrojo_impresion);
+	simulation = coder->simulation;
+	pthread_mutex_lock(&simulation->print_lock);
+	printf("%ld %d burned out\n",
+		time_ms() - simulation->start_time, coder->id);
+	pthread_mutex_unlock(&simulation->print_lock);
 }

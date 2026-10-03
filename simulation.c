@@ -14,59 +14,59 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void	*ft_calloc(size_t tamano)
+static void	*ft_calloc(size_t size)
 {
-	void	*memoria;
+	void	*memory;
 
-	memoria = malloc(tamano);
-	if (memoria)
-		memset(memoria, 0, tamano);
-	return (memoria);
+	memory = malloc(size);
+	if (memory)
+		memset(memory, 0, size);
+	return (memory);
 }
 
-static int	asignar(t_simulacion *simulacion, t_configuracion *configuracion)
+static int	allocate(t_simulation *simulation, t_config *config)
 {
-	simulacion->llaves = ft_calloc(configuracion->programadores
-			* sizeof(*simulacion->llaves));
-	simulacion->programadores = ft_calloc(configuracion->programadores
-			* sizeof(*simulacion->programadores));
-	simulacion->cola = ft_calloc(configuracion->programadores
-			* sizeof(*simulacion->cola));
-	if (!simulacion->llaves || !simulacion->programadores || !simulacion->cola)
-		return (liberar_asignaciones(simulacion));
+	simulation->dongles = ft_calloc(config->coders
+			* sizeof(*simulation->dongles));
+	simulation->coders = ft_calloc(config->coders
+			* sizeof(*simulation->coders));
+	simulation->queue = ft_calloc(config->coders
+			* sizeof(*simulation->queue));
+	if (!simulation->dongles || !simulation->coders || !simulation->queue)
+		return (free_allocations(simulation));
 	return (1);
 }
 
-static void	inicializar_programadores(t_simulacion *simulacion)
+static void	init_coders(t_simulation *simulation)
 {
-	int	indice;
+	int	index;
 
-	indice = 0;
-	while (indice < simulacion->configuracion.programadores)
+	index = 0;
+	while (index < simulation->config.coders)
 	{
-		simulacion->llaves[indice].libre = 1;
-		simulacion->programadores[indice].id = indice + 1;
-		simulacion->programadores[indice].ultima_compilacion
-			= simulacion->inicio;
-		simulacion->programadores[indice].simulacion = simulacion;
-		indice++;
+		simulation->dongles[index].available = 1;
+		simulation->coders[index].id = index + 1;
+		simulation->coders[index].last_compile_start
+			= simulation->start_time;
+		simulation->coders[index].simulation = simulation;
+		index++;
 	}
 }
 
-int	inicializar_simulacion(t_simulacion *simulacion,
-		t_configuracion *configuracion)
+int	init_simulation(t_simulation *simulation,
+		t_config *config)
 {
-	memset(simulacion, 0, sizeof(*simulacion));
-	simulacion->configuracion = *configuracion;
-	simulacion->inicio = tiempo_ms();
-	if (!asignar(simulacion, configuracion))
+	memset(simulation, 0, sizeof(*simulation));
+	simulation->config = *config;
+	simulation->start_time = time_ms();
+	if (!allocate(simulation, config))
 		return (0);
-	if (pthread_mutex_init(&simulacion->cerrojo, NULL))
-		return (liberar_asignaciones(simulacion));
-	if (pthread_mutex_init(&simulacion->cerrojo_impresion, NULL))
-		return (limpiar_cerrojo(simulacion));
-	if (pthread_cond_init(&simulacion->cambio, NULL))
-		return (limpiar_cerrojo_impresion(simulacion));
-	inicializar_programadores(simulacion);
+	if (pthread_mutex_init(&simulation->lock, NULL))
+		return (free_allocations(simulation));
+	if (pthread_mutex_init(&simulation->print_lock, NULL))
+		return (cleanup_lock(simulation));
+	if (pthread_cond_init(&simulation->changed, NULL))
+		return (cleanup_print_lock(simulation));
+	init_coders(simulation);
 	return (1);
 }

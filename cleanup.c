@@ -13,35 +13,35 @@
 #include <stdlib.h>
 #include "codexion.h"
 
-int	liberar_asignaciones(t_simulacion *simulacion)
+int	free_allocations(t_simulation *simulation)
 {
-	free(simulacion->llaves);
-	free(simulacion->programadores);
-	free(simulacion->cola);
+	free(simulation->dongles);
+	free(simulation->coders);
+	free(simulation->queue);
 	return (0);
 }
 
-int	limpiar_cerrojo(t_simulacion *simulacion)
+int	cleanup_lock(t_simulation *simulation)
 {
-	pthread_mutex_destroy(&simulacion->cerrojo);
-	free(simulacion->llaves);
-	free(simulacion->programadores);
-	free(simulacion->cola);
+	pthread_mutex_destroy(&simulation->lock);
+	free(simulation->dongles);
+	free(simulation->coders);
+	free(simulation->queue);
 	return (0);
 }
 
-int	limpiar_cerrojo_impresion(t_simulacion *simulacion)
+int	cleanup_print_lock(t_simulation *simulation)
 {
-	pthread_mutex_destroy(&simulacion->cerrojo_impresion);
-	pthread_mutex_destroy(&simulacion->cerrojo);
-	free(simulacion->llaves);
-	free(simulacion->programadores);
-	free(simulacion->cola);
+	pthread_mutex_destroy(&simulation->print_lock);
+	pthread_mutex_destroy(&simulation->lock);
+	free(simulation->dongles);
+	free(simulation->coders);
+	free(simulation->queue);
 	return (0);
 }
 
-void	destruir_simulacion(t_simulacion *simulacion)
+void	destroy_simulation(t_simulation *simulation)
 {
-	pthread_cond_destroy(&simulacion->cambio);
-	limpiar_cerrojo_impresion(simulacion);
+	pthread_cond_destroy(&simulation->changed);
+	cleanup_print_lock(simulation);
 }
