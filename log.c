@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "codexion.h"
+#include "coders/codexion.h"
 #include <stdio.h>
 
 void	log_state(t_coder *coder, char *state)

@@ -1,10 +1,10 @@
 NAME = codexion
 
 CC = cc
-CFLAGS = -Wall -Wextra -Werror -pthread -Icoders
+CFLAGS = -Wall -Wextra -Werror -pthread -std=c89 -D_DEFAULT_SOURCE
 
 SRCS = main.c parse.c simulation.c cleanup.c time.c state.c log.c monitor.c \
-	queue.c dongle.c scheduler.c developer.c
+	queue.c dongle.c scheduler.c coder.c
 OBJ_DIR = coders
 OBJS = $(addprefix $(OBJ_DIR)/,$(SRCS:.c=.o))
 

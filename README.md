@@ -97,7 +97,7 @@ The monitor also checks and updates the stop state while holding `lock`. Logging
 | `main.c` | Creates and joins coder and monitor threads. |
 | `parse.c` | Argument validation and configuration. |
 | `simulation.c`, `cleanup.c` | Shared-state initialization and resource cleanup. |
-| `developer.c` | Each coder's compile, debug, and refactor cycle. |
+| `coder.c` | Each coder's compile, debug, and refactor cycle. |
 | `dongle.c`, `scheduler.c` | Dongle requests, cooldown, allocation, and release. |
 | `queue.c` | FIFO/EDF priority heap. |
 | `monitor.c`, `state.c`, `log.c`, `time.c` | Burnout monitor, state, logging, and timing. |

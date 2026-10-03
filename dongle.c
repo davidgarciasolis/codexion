@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "codexion.h"
+#include "coders/codexion.h"
 #include <sys/time.h>
 
 static long	next_cooldown(t_simulation *simulation, long now)

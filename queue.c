@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "codexion.h"
+#include "coders/codexion.h"
 
 int	has_priority(t_simulation *simulation, t_coder *first,
 		t_coder *second)

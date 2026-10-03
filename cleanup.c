@@ -11,7 +11,7 @@
 /* ************************************************************************** */
 
 #include <stdlib.h>
-#include "codexion.h"
+#include "coders/codexion.h"
 
 int	free_allocations(t_simulation *simulation)
 {

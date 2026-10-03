@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "codexion.h"
+#include "coders/codexion.h"
 #include <unistd.h>
 
 static t_coder	*find_burned_out(t_simulation *simulation)

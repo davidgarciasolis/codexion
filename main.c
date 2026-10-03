@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "codexion.h"
+#include "coders/codexion.h"
 #include <stdio.h>
 
 static int	start_coders(t_simulation *simulation)
