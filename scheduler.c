@@ -37,10 +37,14 @@ static int	best_available(t_simulation *simulation, long now)
 	best = -1;
 	while (index < simulation->queue_size)
 	{
-		if (can_take(simulation->queue[index], now) && (best == -1
-				|| has_priority(simulation, simulation->queue[index],
-					simulation->queue[best])))
-			best = index;
+		if (can_take(simulation->queue[index], now))
+		{
+			if (best == -1)
+				best = index;
+			else if (has_priority(simulation, simulation->queue[index],
+					simulation->queue[best]))
+				best = index;
+		}
 		index++;
 	}
 	return (best);
