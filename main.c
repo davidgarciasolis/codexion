@@ -25,6 +25,7 @@ static int	start_coders(t_simulation *simulation)
 				&simulation->coders[index]))
 		{
 			stop_simulation(simulation);
+			printf("Error: could not create a coder thread.\n");
 			break ;
 		}
 		index++;
@@ -55,7 +56,9 @@ int	main(int argc, char **argv)
 		|| !init_simulation(&simulation, &config))
 		return (1);
 	index = start_coders(&simulation);
-	monitor_created = start_monitor(&simulation, &monitor);
+	monitor_created = 0;
+	if (index == config.coders)
+		monitor_created = start_monitor(&simulation, &monitor);
 	while (index > 0)
 	{
 		index--;
