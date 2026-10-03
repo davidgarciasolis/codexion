@@ -6,7 +6,7 @@
 /*   By: davgarc4 <davgarc4@student.42madrid.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/18 17:32:15 by davgarc4          #+#    #+#             */
-/*   Updated: 2026/10/03 15:14:56 by davgarc4         ###   ########.fr       */
+/*   Updated: 2026/10/03 18:26:04 by davgarc4         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,8 +62,7 @@ static int	compile(t_coder *coder)
 	coder->last_compile_start = time_ms();
 	pthread_mutex_unlock(&coder->simulation->lock);
 	log_state(coder, "has taken a dongle");
-	if (coder->simulation->config.coders > 1)
-		log_state(coder, "has taken a dongle");
+	log_state(coder, "has taken a dongle");
 	log_state(coder, "is compiling");
 	sleep_or_stop(coder->simulation,
 		coder->simulation->config.time_to_compile);
