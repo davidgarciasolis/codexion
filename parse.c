@@ -6,7 +6,7 @@
 /*   By: davgarc4 <davgarc4@student.42madrid.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/18 17:32:40 by davgarc4          #+#    #+#             */
-/*   Updated: 2026/09/18 17:58:08 by davgarc4         ###   ########.fr       */
+/*   Updated: 2026/10/03 15:03:26 by davgarc4         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,7 +59,7 @@ static void	configure(t_config *config, long *value,
 int	parse_args(int argc, char **argv, t_config *config)
 {
 	long	value[7];
-	int	index;
+	int		index;
 
 	if (argc != 9 || (strcmp(argv[8], "fifo") && strcmp(argv[8], "edf")))
 		return (printf("Error: invalid arguments.\n"), 0);
