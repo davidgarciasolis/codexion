@@ -28,9 +28,18 @@ static int	numero(char *texto, long *valor)
 		numero = numero * 10 + *texto - '0';
 		texto++;
 	}
-	if (numero <= 0 || numero > 2147483647)
+	if (numero > 2147483647)
 		return (0);
 	*valor = numero;
+	return (1);
+}
+
+static int	argumento_valido(char *texto, long *valor, int indice)
+{
+	if (!numero(texto, valor))
+		return (0);
+	if (indice == 0 || indice == 5)
+		return (*valor > 0);
 	return (1);
 }
 
@@ -57,9 +66,10 @@ int	parsear(int argc, char **argv, t_configuracion *configuracion)
 	indice = 0;
 	while (indice < 7)
 	{
-		if (!numero(argv[indice + 1], &valor[indice]))
+		if (!argumento_valido(argv[indice + 1], &valor[indice], indice))
 			return (printf("Error: los argumentos"
-					" deben ser enteros positivos.\n"), 0);
+					" deben ser enteros no negativos; programadores y"
+					" compilaciones requeridas deben ser mayores que 0.\n"), 0);
 		indice++;
 	}
 	configurar(configuracion, valor, argv[8]);

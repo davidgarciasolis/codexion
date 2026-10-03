@@ -36,7 +36,7 @@ make re
 ./codexion number_of_coders time_to_burnout time_to_compile time_to_debug time_to_refactor number_of_compiles_required dongle_cooldown scheduler
 ```
 
-All times are in milliseconds. The seven numeric parameters must be positive integers, and `scheduler` must be either `fifo` or `edf`.
+All times are in milliseconds and may be 0. The seven numeric parameters must be integers between 0 and 2147483647, with `number_of_coders` and `number_of_compiles_required` greater than 0. The `scheduler` must be either `fifo` or `edf`.
 
 | Argument | Description |
 | --- | --- |
