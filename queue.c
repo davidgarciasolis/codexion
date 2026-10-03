@@ -18,13 +18,16 @@ int	has_priority(t_simulation *simulation, t_coder *first,
 	long	first_deadline;
 	long	second_deadline;
 
-	first_deadline = first->last_compile_start
-		+ simulation->config.time_to_burnout;
-	second_deadline = second->last_compile_start
-		+ simulation->config.time_to_burnout;
 	if (simulation->config.edf)
-		return (first_deadline < second_deadline || (first_deadline
-				== second_deadline && first->id < second->id));
+	{
+		first_deadline = first->last_compile_start
+			+ simulation->config.time_to_burnout;
+		second_deadline = second->last_compile_start
+			+ simulation->config.time_to_burnout;
+		if  (first_deadline == second_deadline)
+			return (first->id < second->id);
+		return (first_deadline < second_deadline);
+	}
 	return (first->turn < second->turn);
 }
 
