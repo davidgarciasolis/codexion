@@ -6,13 +6,14 @@
 /*   By: davgarc4 <davgarc4@student.42madrid.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/18 17:32:15 by davgarc4          #+#    #+#             */
-/*   Updated: 2026/09/18 17:59:42 by davgarc4         ###   ########.fr       */
+/*   Updated: 2026/10/03 15:14:56 by davgarc4         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "coders/codexion.h"
 #include <errno.h>
 #include <sys/time.h>
+#include <unistd.h>
 
 static void	deadline_from_now(struct timespec *deadline, long milliseconds)
 {
@@ -52,8 +53,7 @@ static int	compile(t_coder *coder)
 	{
 		log_state(coder, "has taken a dongle");
 		while (!is_stopped(coder->simulation))
-			sleep_or_stop(coder->simulation,
-				coder->simulation->config.time_to_burnout);
+			usleep(1000);
 		return (0);
 	}
 	if (!take_dongles(coder))
@@ -99,7 +99,9 @@ void	*coder_routine(void *argument)
 	coder = argument;
 	while (!is_stopped(coder->simulation))
 	{
-		if (!compile(coder) || !complete_compile(coder))
+		if (!compile(coder))
+			break ;
+		if (!complete_compile(coder))
 			break ;
 		log_state(coder, "is debugging");
 		if (!sleep_or_stop(coder->simulation,
