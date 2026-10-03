@@ -13,21 +13,21 @@
 #include "coders/codexion.h"
 #include <sys/time.h>
 
-static long	next_cooldown(t_simulation *simulation, long now)
+static long	next_cooldown(t_coder *coder, long now)
 {
-	long	next;
-	int		index;
+	t_simulation	*simulation;
+	long			next;
+	long			right_ready;
 
-	next = 0;
-	index = 0;
-	while (index < simulation->config.coders)
-	{
-		if (simulation->dongles[index].ready_at > now
-			&& (!next || simulation->dongles[index].ready_at < next))
-			next = simulation->dongles[index].ready_at;
-		index++;
-	}
-	return (next);
+	simulation = coder->simulation;
+	next = simulation->dongles[coder->id - 1].ready_at;
+	right_ready = simulation->dongles[
+		coder->id % simulation->config.coders].ready_at;
+	if (right_ready > next)
+		next = right_ready;
+	if (next > now)
+		return (next);
+	return (0);
 }
 
 int	can_take(t_coder *coder, long now)
@@ -57,7 +57,7 @@ static void	wait_for_turn(t_coder *coder)
 	simulation = coder->simulation;
 	while (!coder->granted && !simulation->stopped)
 	{
-		next = next_cooldown(simulation, time_ms());
+		next = next_cooldown(coder, time_ms());
 		if (next)
 		{
 			deadline.tv_sec = next / 1000;
