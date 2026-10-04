@@ -33,9 +33,9 @@ void	wake_neighbors(t_coder *coder)
 		% simulation->config.coders;
 	right = coder->id % simulation->config.coders;
 	if (simulation->coders[left].waiting)
-		pthread_cond_signal(&simulation->coders[left].ready);
+		pthread_cond_broadcast(&simulation->coders[left].ready);
 	if (right != left && simulation->coders[right].waiting)
-		pthread_cond_signal(&simulation->coders[right].ready);
+		pthread_cond_broadcast(&simulation->coders[right].ready);
 }
 
 void	wake_coders(t_simulation *simulation)
@@ -45,7 +45,7 @@ void	wake_coders(t_simulation *simulation)
 	index = 0;
 	while (index < simulation->config.coders)
 	{
-		pthread_cond_signal(&simulation->coders[index].ready);
+		pthread_cond_broadcast(&simulation->coders[index].ready);
 		index++;
 	}
 	pthread_cond_broadcast(&simulation->changed);
